@@ -1,6 +1,8 @@
 # CaseStudy
 🧪 Özellikler
+
 👥 Kullanıcı Yönetimi
+
 JWT tabanlı login/register
 
 Yetkili kullanıcı (admin) kontrolü
@@ -10,6 +12,7 @@ Profil görüntüleme ve güncelleme
 Adres ekleme/silme/güncelleme
 
 🛒 Sepet & Sipariş
+
 Sepete ürün ekleme/çıkarma
 
 Sipariş oluşturma ve gönderme
@@ -17,6 +20,7 @@ Sipariş oluşturma ve gönderme
 Kullanıcıya özel sipariş geçmişi
 
 🛍️ Ürün Yönetimi
+
 Admin panelinden ürün ekleme
 
 Featured & kategorili ürün listesi
@@ -24,7 +28,9 @@ Featured & kategorili ürün listesi
 Dinamik fiyat filtreleme
 
 ⚙️ Teknolojiler
+
 ✅ Frontend
+
 [Next.js 13+ App Router]
 
 [TypeScript]
@@ -36,6 +42,7 @@ Dinamik fiyat filtreleme
 [Zustand] (global state yönetimi)
 
 ✅ Backend
+
 [Node.js + Express]
 
 [MongoDB + Mongoose]
@@ -47,23 +54,29 @@ Dinamik fiyat filtreleme
 🔧 Kurulum
 
 1. Repo'yu klonlayın
+   
 git clone https://github.com/kullaniciAdi/proje-adi.git
 cd proje-adi
 
-2. Backend için:
+3. Backend için:
+   
 cd backend
 npm install
 npm run dev
 
-3. Frontend için:
+5. Frontend için:
+   
 cd frontend
 npm install
 npm run dev
 .env dosyasında backend bağlantısı ve JWT secret ayarlanmalıdır.
 
 👤 Giriş Bilgileri (Demo için)
+
 Rol	Email	Şifre
+
 Kullanıcı	user@example.com	123456
+
 Admin	admin@example.com	123456
 
 🧾 Notlar
