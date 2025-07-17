@@ -46,16 +46,16 @@ Dinamik fiyat filtreleme
 
 🔧 Kurulum
 
-# 1. Repo'yu klonlayın
+1. Repo'yu klonlayın
 git clone https://github.com/kullaniciAdi/proje-adi.git
 cd proje-adi
 
-# 2. Backend için:
+2. Backend için:
 cd backend
 npm install
 npm run dev
 
-# 3. Frontend için:
+3. Frontend için:
 cd frontend
 npm install
 npm run dev
