@@ -1,36 +1,20 @@
 import express from 'express';
-import Category from '../models/category';
+import {
+  getAllCategories,
+  createCategory,
+  deleteCategory
+} from '../controllers/categoryController';
+import { upload } from '../middleware/upload';
 
 const router = express.Router();
 
 // @route GET /api/categories
-router.get('/', async (req, res) => {
-  try {
-    const categories = await Category.find();
-    res.json(categories);
-  } catch (err) {
-    console.error('GET /api/categories error:', err);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+router.get('/', getAllCategories);
 
 // @route POST /api/categories
-router.post('/', async (req, res) => {
-  const { name, description, image, isActive } = req.body;
+router.post('/', upload.single('image'), createCategory);
 
-  try {
-    const category = await Category.create({
-      name,
-      description,
-      image,
-      isActive
-    });
-
-    res.status(201).json(category);
-  } catch (err) {
-    console.error('POST /api/categories error:', err);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+// @route DELETE /api/categories/:id
+router.delete('/:id', deleteCategory);
 
 export default router;

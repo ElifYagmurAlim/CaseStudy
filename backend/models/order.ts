@@ -3,7 +3,11 @@ import mongoose, { Document, Schema , Model } from 'mongoose';
 export interface IOrder extends Document {
   user: mongoose.Types.ObjectId;
   items: {
-    product: mongoose.Types.ObjectId;
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: true,
+    },
     qty: number;
     price: number;
   }[];

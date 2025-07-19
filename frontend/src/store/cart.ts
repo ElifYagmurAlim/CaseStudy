@@ -1,37 +1,47 @@
+// store/cart.ts
 import { create } from 'zustand';
+import { CartItem } from '@/types/types';
+import { persist } from 'zustand/middleware';
 
-type CartItem = {
-  productId: string;
-  name: string;
-  price: number;
-  qty: number;
-};
-
-type CartState = {
+type CartState  = {
   items: CartItem[];
   addToCart: (item: CartItem) => void;
   removeFromCart: (productId: string) => void;
+  updateQty: (productId: string, qty: number) => void;
   clearCart: () => void;
+  total: () => number;
 };
 
-//zustand chart management (state store) - upgrades chart from anywhere on app.
-export const useCart = create<CartState>((set) => ({
-  items: [],
-  addToCart: (item) => //add item
-    set((state) => {
-      const existing = state.items.find(i => i.productId === item.productId);
-      if (existing) {
-        return {
-          items: state.items.map(i =>
-            i.productId === item.productId ? { ...i, qty: i.qty + item.qty } : i
-          )
-        };
-      }
-      return { items: [...state.items, item] };
+export const useCart = create<CartState>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      addToCart: (item) => {
+        const existing = get().items.find(i => i.productId === item.productId);
+        if (existing) {
+          set({
+            items: get().items.map(i =>
+              i.productId === item.productId ? { ...i, qty: i.qty + item.qty } : i
+            ),
+          });
+        } else {
+          set({ items: [...get().items, item] });
+        }
+      },
+      removeFromCart: (id) =>
+        set({ items: get().items.filter(i => i.productId !== id) }),
+      updateQty: (productId, qty) =>
+    set({
+      items: get().items.map((i) =>
+        i.productId === productId ? { ...i, qty } : i
+      ),
     }),
-  removeFromCart: (productId) => //remove item
-    set((state) => ({
-      items: state.items.filter(i => i.productId !== productId)
-    })),
-  clearCart: () => set({ items: [] }) //remove all items
-}));
+  clearCart: () => set({ items: [] }),
+  total: () =>
+    get().items.reduce((acc, item) => acc + item.price * item.qty, 0),  
+    }),
+    {
+      name: 'cart-storage', // 👈 localStorage key
+    }
+  )
+);

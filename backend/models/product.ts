@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import '../models/category';
+import '../models/review';
 
 export interface IProduct extends Document {
   name: string;
@@ -17,6 +18,7 @@ export interface IProduct extends Document {
     color?: string;
   }[];
   views: number;
+  review: mongoose.Types.ObjectId;
 }
 
 const productSchema = new Schema<IProduct>(
@@ -38,6 +40,7 @@ const productSchema = new Schema<IProduct>(
       },
     ],
     views: { type: Number, default: 0 },
+    review:{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' },
   },
   { timestamps: true }
 );

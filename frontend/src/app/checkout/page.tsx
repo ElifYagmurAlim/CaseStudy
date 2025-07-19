@@ -1,116 +1,82 @@
+// app/checkout/page.tsx
 'use client';
 
 import { useCart } from '@/store/cart';
-import { useAuth } from '@/store/auth';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/store/auth';
 import api from '@/lib/axios';
 
 export default function CheckoutPage() {
-  const { user } = useAuth();
-  const { items, clearCart } = useCart();
+  const { items, total, clearCart } = useCart();
   const router = useRouter();
+  const { user } = useAuth();
+  
+  const [shipping, setShipping] = useState('');
+  const [payment, setPayment] = useState('');
 
-  const [form, setForm] = useState({
-    street: '',
-    city: '',
-    postalCode: '',
-    paymentMethod: '',
-  });
-
-  const [loading, setLoading] = useState(false);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+const handleCheckout = async () => {
+  if (!shipping || !payment) {
+    alert('Please fill in shipping and payment information');
+    return;
+  }
+const order = {
+    user: user?._id, // ✅ kullanıcının ID'si olmalı
+    shippingAddress: shipping,
+    paymentMethod: payment,
+    items: items.map((item) => ({
+      product: item.productId,
+      name: item.name, // ✅ opsiyonel ama gösterim için iyi
+      qty: item.qty,
+      price: item.price // ✅ bu alan zorunlu!
+    })),
   };
 
-  const handleSubmit = async () => {
-    if (!user) {
-      alert('Lütfen giriş yapın');
-      router.push('/login');
-      return;
-    }
-
-    if (items.length === 0) {
-      alert('Sepetiniz boş');
-      return;
-    }
-
-    setLoading(true);
-
     try {
-      await api.post('/orders', {
-        user: user._id,
-        items: items.map((item) => ({
-          product: item.productId,
-          qty: item.qty,
-          price: item.price,
-        })),
-        shippingAddress: {
-          street: form.street,
-          city: form.city,
-          postalCode: form.postalCode,
-        },
-        paymentMethod: form.paymentMethod || 'Nakit', // opsiyonel alan
-      });
-
-      clearCart();
-      alert('Sipariş başarıyla oluşturuldu!');
-      router.push('/');
+      await api.post('/orders', order);
+      alert('Order placed successfully!');
+      router.push('/orders/confirmation');
     } catch (err) {
-      console.error('Sipariş oluşturulamadı:', err);
-      alert('Sipariş gönderilirken bir hata oluştu.');
-    } finally {
-      setLoading(false);
+      console.error('Order failed:', err);
+      alert('Order creation failed!');
     }
   };
 
   return (
-    <main className="max-w-xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Sipariş Bilgileri</h1>
+    <div className="max-w-xl mx-auto p-4 space-y-4">
+      <h1 className="text-2xl font-bold mb-4">Checkout</h1>
 
-      <div className="space-y-4">
-        <input
-          type="text"
-          name="street"
-          placeholder="Cadde/Sokak"
-          value={form.street}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
+      <div>
+        <label className="block font-medium">Shipping Address</label>
+        <textarea
+          className="w-full border rounded p-2"
+          value={shipping}
+          onChange={(e) => setShipping(e.target.value)}
         />
-        <input
-          type="text"
-          name="city"
-          placeholder="Şehir"
-          value={form.city}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-        />
-        <input
-          type="text"
-          name="postalCode"
-          placeholder="Posta Kodu"
-          value={form.postalCode}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-        />
-        <input
-          type="text"
-          name="paymentMethod"
-          placeholder="Ödeme Yöntemi (örnek: Nakit, Kredi Kartı)"
-          value={form.paymentMethod}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-        />
+      </div>
 
-        <button
-          onClick={handleSubmit}
-          disabled={loading}
-          className="bg-black text-white px-4 py-2 rounded w-full"
+      <div>
+        <label className="block font-medium">Payment Method</label>
+        <select
+          className="w-full border rounded p-2"
+          value={payment}
+          onChange={(e) => setPayment(e.target.value)}
         >
-          {loading ? 'Gönderiliyor...' : 'Siparişi Tamamla'}
+          <option value="">Select Payment</option>
+          <option value="card">Credit Card</option>
+          <option value="cash">Cash on Delivery</option>
+        </select>
+      </div>
+
+      <div className="text-right">
+        <p className="text-xl font-semibold">Total: {total()} ₺</p>
+        <button
+          onClick={handleCheckout}
+          className="bg-green-600 text-white px-6 py-2 rounded mt-2"
+        >
+          Complete Order
         </button>
       </div>
-    </main>
+    </div>
   );
 }

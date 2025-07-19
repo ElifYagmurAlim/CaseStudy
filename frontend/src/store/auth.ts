@@ -14,6 +14,7 @@ interface User {
   lastName?: string;
   phone?: string;
   addresses?: Address[];
+  wishlist?: string[];
 }
 
 interface AuthStore {
