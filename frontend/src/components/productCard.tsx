@@ -47,7 +47,7 @@ export default function ProductCard({
         name: name,
         price: price,
         qty: 1,
-        image: images?.[0] || '/placeholder.jpg',
+        image: mainImage,
       });
       setAdded(true);
       setTimeout(() => setAdded(false), 1500);
@@ -75,61 +75,61 @@ export default function ProductCard({
     : null;
 
   return (
-    <div className="relative">
-      <div className="border p-4 rounded shadow hover:shadow-lg transition">
-        <div className="relative w-full h-48 mb-3">
-          <Image
-            src={`http://localhost:5000/uploads/${mainImage}`}
-            alt={name}
-            fill
-            className="object-cover rounded"
-          />
-        </div>
+    <div className="relative h-full">
+      <div className="border p-4 rounded shadow hover:shadow-lg transition h-full flex flex-col justify-between">
+        <div>
+          <div className="relative w-full h-48 mb-3">
+            <Image
+              src={`http://localhost:5000/uploads/${mainImage}`}
+              alt={name}
+              fill
+              className="object-cover rounded"
+            />
+          </div>
 
-        <h3 className="text-lg font-bold">{name}</h3>
-        <p className="font-semibold text-orange-600">{price} ₺</p>
+          <h3 className="text-lg font-bold">{name}</h3>
+          <p className="font-semibold text-orange-600">{price} ₺</p>
 
-        <div className="flex flex-wrap items-center text-xs text-gray-500 mt-2 gap-x-3">
-          <span>📦 Stok: {stock}</span>
-          <span>🛒 Satılan: {sold}</span>
-          <span><Eye size={14} className="inline-block mr-1" /> {views}</span>
-          {avgRating && (
-            <span>
-              <Star size={14} className="inline-block text-yellow-500" fill="#facc15" /> {avgRating}
-            </span>
+          <div className="flex flex-wrap items-center text-xs text-gray-500 mt-2 gap-x-3">
+            <span>📦 Stok: {stock}</span>
+            <span>🛒 Satılan: {sold}</span>
+            <span><Eye size={14} className="inline-block mr-1" /> {views}</span>
+            {avgRating && (
+              <span>
+                <Star size={14} className="inline-block text-yellow-500" fill="#facc15" /> {avgRating}
+              </span>
+            )}
+          </div>
+
+          {featured && (
+            <div className="text-xs text-yellow-600 font-semibold mt-1">
+              ⭐ Öne Çıkan
+            </div>
+          )}
+
+          {tags?.length > 0 && (
+            <div className="flex flex-wrap gap-1 text-xs text-gray-600 mt-2">
+              {tags.map((tag, idx) => (
+                <span key={idx} className="bg-gray-200 px-2 py-0.5 rounded">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {variants?.length > 0 && (
+            <p className="text-xs text-gray-500 mt-1">
+              {variants.map(v => `${v.size || ''} ${v.color || ''}`).join(', ')}
+            </p>
           )}
         </div>
 
-        {featured && (
-          <div className="text-xs text-yellow-600 font-semibold mt-1">
-            ⭐ Öne Çıkan
-          </div>
-        )}
-
-        {tags?.length > 0 && (
-          <div className="flex flex-wrap gap-1 text-xs text-gray-600 mt-2">
-            {tags.map((tag, idx) => (
-              <span
-                key={idx}
-                className="bg-gray-200 px-2 py-0.5 rounded"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {variants?.length > 0 && (
-          <p className="text-xs text-gray-500 mt-1">
-            {variants.map(v => `${v.size || ''} ${v.color || ''}`).join(', ')}
-          </p>
-        )}
-
-        <div className="flex gap-2 mt-3">
+        {/* Butonlar en altta */}
+        <div className="mt-auto flex gap-2 pt-4">
           <button
             onClick={handleAdd}
             disabled={stock === 0}
-            className={`px-6 py-2 rounded transition-all duration-100 text-sm ${
+            className={`flex-1 py-2 rounded transition-all duration-100 text-sm ${
               added ? 'bg-green-500' : 'bg-orange-500'
             } text-white`}
           >
@@ -137,7 +137,7 @@ export default function ProductCard({
           </button>
           <button
             onClick={() => router.push(`/product/${_id}`)}
-            className="px-6 py-2 rounded transition-all duration-300 bg-blue-500 hover:bg-blue-700 text-white text-sm"
+            className="flex-1 py-2 rounded transition-all duration-300 bg-blue-500 hover:bg-blue-700 text-white text-sm"
           >
             İncele
           </button>

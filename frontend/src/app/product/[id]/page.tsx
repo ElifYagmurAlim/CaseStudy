@@ -75,7 +75,7 @@ export default function ProductDetailPage() {
 
     setProduct(productRes.data);
     setRelated(relatedRes.data);
-    setViewedTogether(viewedRes.data.related || []);
+    setViewedTogether(viewedRes.data || []);
     setLastReviews(productRes.data.reviews?.slice(-3).reverse() || []);
   }, [id]);
 
@@ -84,18 +84,28 @@ export default function ProductDetailPage() {
       await fetchProduct();
       if (!id || viewedOnce.current) return;
 
-
       try {
+        
         await api.post(`/products/${id}/viewed`);
         viewedOnce.current = true;
         const recent = JSON.parse(localStorage.getItem('recentlyViewedProducts') || '[]');
         const updated = [id, ...recent.filter((pid: string) => pid !== id)].slice(0, 5);
         localStorage.setItem('recentlyViewedProducts', JSON.stringify(updated));
+        
+        const toSend = updated.filter((pid) => pid !== id);
+        if (toSend.length > 0) {
+          await api.post(`/products/update-viewed-together`, {
+            current: id,
+            recent: toSend,
+          });
+        }
 
         if (user) {
           const res = await api.get(`/reviews/can-review/${id}`);
           setCanReview(res.data.canReview);
         }
+        viewedOnce.current = true;
+
       } catch (err) {
         console.error("Veri çekme hatası:", err);
       }
@@ -312,22 +322,22 @@ return (
         </div>
       </section>
 
-      {viewedTogether.length > 0 && (
-        <section className="mt-10">
-          <h2 className="text-2xl font-bold mb-4">Birlikte İncelenen Ürünler</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {viewedTogether.map((p) => (
-              <div key={p._id} className="border p-4 rounded">
-                <p className="font-semibold">{p.name}</p>
-                <p>{p.price.toFixed(2)} ₺</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-      {related.length > 0 && (
+{viewedTogether.length > 0 && (
+  <section className="mt-12">
+    <h2 className="text-2xl font-bold mb-2">Önerilen Ürünler</h2>
+    <p className="text-sm text-gray-500 mb-4">Bu ürünü görüntüleyen kullanıcılar şunlara da baktı</p>
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+      {viewedTogether.map((item) => (
+        <ProductCard key={item._id} {...(item as any)} />
+      ))}
+    </div>
+  </section>
+)}
+
+{related.length > 0 && (
   <section className="mt-16">
     <h2 className="text-2xl font-bold mb-4">Benzer Ürünler</h2>
+    <p className="text-sm text-gray-500 mb-4">Aynı kategorideki diğer ürünler</p>
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
       {related.map((item) => (
         <ProductCard key={item._id} {...(item as any)} />

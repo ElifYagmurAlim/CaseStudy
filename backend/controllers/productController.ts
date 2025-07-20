@@ -213,7 +213,6 @@ export const getViewedTogether = async (req: Request, res: Response) => {
 
 export const addReview = async (req: Request, res: Response) => {
   try {
-    console.log("a");
     const userId = req.user._id;
     const { comment, rating } = req.body;
     const { productId } = req.params;
@@ -262,22 +261,5 @@ product.reviews.push(newReview._id as Types.ObjectId); // 👈 Type cast ekledik
   } catch (err) {
     console.error('Yorum ekleme hatası:', err);
     res.status(500).json({ message: 'Yorum eklenemedi' });
-  }
-};
-
-export const getAllReviewsForProduct = async (req: Request, res: Response) => {
-  try {
-    const product = await Product.findById(req.params.id)
-      .populate({
-        path: 'reviews',
-        populate: { path: 'user', select: 'firstName lastName' },
-      });
-
-    if (!product) return res.status(404).json({ message: 'Product not found' });
-
-    res.json({ reviews: product.reviews });
-  } catch (err) {
-    console.error('GET /products/:id/all-reviews error:', err);
-    res.status(500).json({ message: 'Server error' });
   }
 };

@@ -50,7 +50,9 @@ router.patch(
 // Yorum ekleme
 router.post('/:productId/reviews', authMiddleware, productController.addReview);
 
-router.get('/:id/viewed-together', authMiddleware, productController.getAllReviewsForProduct);
+router.get('/:id/viewed-together', authMiddleware, productController.getViewedTogether);
+
+router.post('/update-viewed-together', authMiddleware, productController.updateViewedTogether);
 
 
 
