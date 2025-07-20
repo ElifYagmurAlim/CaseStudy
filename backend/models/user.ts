@@ -15,14 +15,19 @@ export interface IUser extends Document {
   wishlist: mongoose.Types.ObjectId[];
   favorites: mongoose.Types.ObjectId[];
   isVerified: boolean;
+  verificationToken: String,
   recentViews: mongoose.Types.ObjectId[];
+  emailVerified: boolean,
+  emailVerificationToken: {
+    type: String,
+  },
 }
 
 const userSchema = new Schema<IUser>(
   {
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    role: { type: String, enum: ['admin', 'customer'], default: 'admin' },
+    password: { type: String, required: true , select: false},
+    role: { type: String, enum: ['admin', 'customer'], default: 'customer' },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     phone: { type: String },
@@ -36,7 +41,15 @@ const userSchema = new Schema<IUser>(
     wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
     favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],
     isVerified: { type: Boolean, default: false },
+    verificationToken: String,
     recentViews: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+    emailVerified: {
+    type: Boolean,
+    default: false,
+  },
+  emailVerificationToken: {
+    type: String,
+  },
   },
   { timestamps: true }
 );

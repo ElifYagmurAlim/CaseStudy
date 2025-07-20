@@ -47,6 +47,7 @@ useEffect(() => {
       if (sortBy === 'priceLow') return a.price - b.price;
       if (sortBy === 'priceHigh') return b.price - a.price;
       if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+      if (sortBy === 'newest') return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt|| 0).getTime();
       return new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime(); // newest
     });
 

@@ -1,33 +1,32 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import api from '@/lib/axios';
 import { useAuth } from '@/store/auth';
 import { useRouter } from 'next/navigation';
-import api from '@/lib/axios';
+import Link from 'next/link';
 
 interface Order {
   _id: string;
-  user: { email: string };
   createdAt: string;
-  status: string;
-  items: {
-    qty: number;
-    price: number;
-    product: {
-      name: string;
-      price: number;
-    };
-  }[];
+  status: 'pending' | 'confirmed' | 'shipped' | 'delivered';
+  user: { email: string };
+  total: number;
 }
 
 export default function AdminOrdersPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return router.push('/login');
-    if (user.role !== 'admin') return router.push('/');
+    if (!user || user.role !== 'admin') {
+      router.push('/');
+      return;
+    }
 
     const fetchOrders = async () => {
       try {
@@ -35,54 +34,68 @@ export default function AdminOrdersPage() {
         setOrders(res.data);
       } catch (err) {
         console.error('Siparişler alınamadı:', err);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchOrders();
   }, [user]);
 
-  const updateStatus = async (id: string, status: string) => {
-    try {
-      const res = await api.patch(`/orders/${id}/status`, { status });
-      setOrders((prev) =>
-        prev.map((order) => (order._id === id ? { ...order, status } : order))
-      );
-    } catch (err) {
-      console.error('Durum güncellenemedi:', err);
-    }
-  };
+  const filtered = orders.filter((order) => {
+    const emailMatch = order.user?.email?.toLowerCase().includes(search.toLowerCase());
+    const statusMatch = statusFilter ? order.status === statusFilter : true;
+    return emailMatch && statusMatch;
+  });
+
+  if (loading) return <p className="p-6">Yükleniyor...</p>;
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Tüm Siparişler</h1>
-      {orders.map((order) => (
-        <div key={order._id} className="border p-4 mb-4 rounded shadow">
-          <p><strong>Sipariş No:</strong> {order._id}</p>
-          <p><strong>Kullanıcı:</strong> {order.user?.email}</p>
-          <p><strong>Tarih:</strong> {new Date(order.createdAt).toLocaleDateString()}</p>
-          <p><strong>Durum:</strong> 
-            <select
-              value={order.status}
-              onChange={(e) => updateStatus(order._id, e.target.value)}
-              className="ml-2 border rounded p-1"
-            >
-              <option value="pending">Bekliyor</option>
-              <option value="shipped">Kargoya Verildi</option>
-              <option value="delivered">Teslim Edildi</option>
-              <option value="cancelled">İptal Edildi</option>
-            </select>
-          </p>
+    <div className="p-6 max-w-5xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Sipariş Yönetimi</h1>
 
-          <h2 className="mt-4 font-semibold">Ürünler</h2>
-          <ul className="ml-4 list-disc">
-            {order.items.map((item, i) => (
-              <li key={i}>
-                {item.product?.name} - {item.qty} adet - {item.price.toFixed(2)} ₺
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+      {/* Arama ve Filtre */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <input
+          type="text"
+          placeholder="Kullanıcı email ile ara..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border px-3 py-2 rounded flex-1"
+        />
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="border px-3 py-2 rounded"
+        >
+          <option value="">Tüm Durumlar</option>
+          <option value="pending">Beklemede</option>
+          <option value="confirmed">Onaylandı</option>
+          <option value="shipped">Kargoda</option>
+          <option value="delivered">Teslim Edildi</option>
+        </select>
+      </div>
+
+      {/* Liste */}
+      <div className="space-y-4">
+        {filtered.map((order) => (
+          <div key={order._id} className="p-4 border rounded shadow-sm flex justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Tarih: {new Date(order.createdAt).toLocaleDateString()}</p>
+              <p><strong>Email:</strong> {order.user?.email || '-'}</p>
+              <p><strong>Durum:</strong> {order.status}</p>
+            </div>
+            <div className="flex items-center">
+              <Link
+                href={`/admin/orders/${order._id}`}
+                className="text-blue-600 hover:underline"
+              >
+                Detay
+              </Link>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

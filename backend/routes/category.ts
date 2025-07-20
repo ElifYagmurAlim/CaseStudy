@@ -2,7 +2,9 @@ import express from 'express';
 import {
   getAllCategories,
   createCategory,
-  deleteCategory
+  deleteCategory,
+  updateCategory,
+  getCategory,
 } from '../controllers/categoryController';
 import { upload } from '../middleware/upload';
 
@@ -16,5 +18,9 @@ router.post('/', upload.single('image'), createCategory);
 
 // @route DELETE /api/categories/:id
 router.delete('/:id', deleteCategory);
+
+router.patch('/:id', upload.single('image'), updateCategory);
+
+router.get('/:id', getCategory);
 
 export default router;

@@ -1,179 +1,188 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import api from '@/lib/axios';
-import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-type FormValues = {
+interface Category {
+  _id: string;
   name: string;
-  description: string;
-  price: number;
-  stock: number;
-  category: string;
-  featured: boolean;
-};
+}
+
+interface Variant {
+  size?: string;
+  color?: string;
+}
 
 export default function CreateProductPage() {
   const router = useRouter();
-  const [categories, setCategories] = useState<{ _id: string; name: string }[]>([]);
-  const [images, setImages] = useState<FileList | null>(null);
-  const [tags, setTags] = useState<string[]>([]);
-  const [specs, setSpecs] = useState<{ key: string; value: string }[]>([]);
-  const [variants, setVariants] = useState<{ size?: string; color?: string }[]>([]);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>();
+  const [form, setForm] = useState({
+    name: '',
+    description: '',
+    price: '',
+    stock: '',
+    category: '',
+    featured: false,
+    images: [] as File[],
+    tags: '',
+    specs: {} as Record<string, string>,
+    variants: [] as Variant[],
+  });
+
+  const [specKey, setSpecKey] = useState('');
+  const [specValue, setSpecValue] = useState('');
+  const [variant, setVariant] = useState<Variant>({});
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    api.get('/categories').then(res => setCategories(res.data));
+    api.get('/categories').then((res) => setCategories(res.data));
   }, []);
 
-  const addSpec = () => setSpecs([...specs, { key: '', value: '' }]);
-  const updateSpec = (i: number, field: 'key' | 'value', value: string) => {
-    const updated = [...specs];
-    updated[i][field] = value;
-    setSpecs(updated);
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+    const input = e.target as HTMLInputElement;
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? input.checked : value,
+    }));
   };
-  const removeSpec = (i: number) => setSpecs(specs.filter((_, idx) => idx !== i));
 
-  const addVariant = () => setVariants([...variants, { size: '', color: '' }]);
-  const updateVariant = (i: number, field: 'size' | 'color', value: string) => {
-    const updated = [...variants];
-    updated[i][field] = value;
-    setVariants(updated);
-  };
-  const removeVariant = (i: number) => setVariants(variants.filter((_, idx) => idx !== i));
+const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (e.target.files) {
+    const filesArray = Array.from(e.target.files); // artık güvenli
+    setForm((prev) => ({ ...prev, images: filesArray }));
+  }
+};
 
-  const addTag = (tag: string) => {
-    if (tag && !tags.includes(tag)) {
-      setTags([...tags, tag]);
+  const addSpec = () => {
+    if (specKey && specValue) {
+      setForm((prev) => ({
+        ...prev,
+        specs: { ...prev.specs, [specKey]: specValue },
+      }));
+      setSpecKey('');
+      setSpecValue('');
     }
   };
-  const removeTag = (tag: string) => setTags(tags.filter(t => t !== tag));
 
-  const onSubmit = async (data: FormValues) => {
+  const addVariant = () => {
+    if (variant.size || variant.color) {
+      setForm((prev) => ({
+        ...prev,
+        variants: [...prev.variants, variant],
+      }));
+      setVariant({});
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
     const formData = new FormData();
-    Object.entries(data).forEach(([key, val]) => formData.append(key, String(val)));
-    formData.append('tags', JSON.stringify(tags));
-    formData.append('specs', JSON.stringify(Object.fromEntries(specs.map(s => [s.key, s.value]))));
-    formData.append('variants', JSON.stringify(variants));
-
-    if (images) {
-      Array.from(images).forEach(file => formData.append('images', file));
-    }
+    Object.entries(form).forEach(([key, value]) => {
+      if (key === 'images') {
+        (value as File[]).forEach((file) => formData.append('images', file));
+      } else if (key === 'specs' || key === 'variants') {
+        formData.append(key, JSON.stringify(value));
+      } else {
+        formData.append(key, value as string);
+      }
+    });
 
     try {
-      await api.post('/products', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      alert('Product created!');
+      await api.post('/products', formData);
       router.push('/admin/products');
     } catch (err) {
-      console.error('Create failed:', err);
-      alert('Error while creating product.');
+      console.error('Ürün eklenirken hata:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl mx-auto p-6 space-y-4">
-      <h1 className="text-2xl font-bold">Create Product</h1>
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded shadow">
+      <h1 className="text-2xl font-bold mb-6">Yeni Ürün Oluştur</h1>
+      <form onSubmit={handleSubmit} className="space-y-6">
 
-      <input {...register('name', { required: true })} placeholder="Name" className="input w-full" />
-      <textarea {...register('description', { required: true })} placeholder="Description" className="input w-full" />
-      <input type="number" {...register('price', { required: true })} placeholder="Price" className="input w-full" />
-      <input type="number" {...register('stock', { required: true })} placeholder="Stock" className="input w-full" />
-      <select {...register('category', { required: true })} className="input w-full">
-        <option value="">Select Category</option>
-        {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
-      </select>
-      <label className="flex items-center gap-2">
-        <input type="checkbox" {...register('featured')} /> Featured
-      </label>
-
-      {/* Images */}
-      <div>
-        <label>Images</label>
-        <input type="file" accept="image/*" multiple onChange={e => setImages(e.target.files)} />
-      </div>
-
-      {/* Tags */}
-      <div>
-        <label>Tags</label>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Add tag"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                addTag((e.target as HTMLInputElement).value);
-                (e.target as HTMLInputElement).value = '';
-              }
-            }}
-            className="input w-full"
-          />
+        <div>
+          <label>Ürün Adı</label>
+          <input name="name" className="input" value={form.name} onChange={handleChange} required />
         </div>
-        <div className="flex gap-2 flex-wrap mt-2">
-          {tags.map((tag, i) => (
-            <span key={i} className="bg-gray-200 px-2 py-1 rounded text-sm">
-              {tag}
-              <button onClick={() => removeTag(tag)} className="ml-1 text-red-500">×</button>
-            </span>
-          ))}
+
+        <div>
+          <label>Açıklama</label>
+          <textarea name="description" className="input" rows={3} value={form.description} onChange={handleChange} />
         </div>
-      </div>
 
-      {/* Specs */}
-      <div>
-        <label>Specifications</label>
-        {specs.map((s, i) => (
-          <div key={i} className="flex gap-2 mb-2">
-            <input
-              type="text"
-              value={s.key}
-              placeholder="Key"
-              onChange={(e) => updateSpec(i, 'key', e.target.value)}
-              className="input w-1/2"
-            />
-            <input
-              type="text"
-              value={s.value}
-              placeholder="Value"
-              onChange={(e) => updateSpec(i, 'value', e.target.value)}
-              className="input w-1/2"
-            />
-            <button type="button" onClick={() => removeSpec(i)} className="text-red-500">×</button>
+        <div className="grid grid-cols-2 gap-4">
+          <input name="price" type="number" placeholder="Fiyat (₺)" className="input" value={form.price} onChange={handleChange} required />
+          <input name="stock" type="number" placeholder="Stok" className="input" value={form.stock} onChange={handleChange} required />
+        </div>
+
+        <div>
+          <label>Kategori</label>
+          <select name="category" className="input" value={form.category} onChange={handleChange} required>
+            <option value="">Kategori Seçin</option>
+            {categories.map((cat) => (
+              <option key={cat._id} value={cat._id}>{cat.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label>Etiketler (virgülle)</label>
+          <input name="tags" className="input" value={form.tags} onChange={handleChange} placeholder="Örn: yaz, indirim, yeni" />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input type="checkbox" name="featured" checked={form.featured} onChange={handleChange} />
+          <span>Öne Çıkan Ürün</span>
+        </div>
+
+        <div>
+          <label>Görseller</label>
+          <input type="file" multiple accept="image/*" onChange={handleImageUpload} />
+        </div>
+
+        {/* Teknik Özellikler */}
+        <div>
+          <label>Teknik Özellikler</label>
+          <div className="flex gap-2 mb-2">
+            <input placeholder="Özellik" value={specKey} onChange={(e) => setSpecKey(e.target.value)} className="input" />
+            <input placeholder="Değer" value={specValue} onChange={(e) => setSpecValue(e.target.value)} className="input" />
+            <button type="button" onClick={addSpec} className="btn">Ekle</button>
           </div>
-        ))}
-        <button type="button" onClick={addSpec} className="text-blue-500 text-sm">+ Add Spec</button>
-      </div>
+          <ul className="text-sm text-gray-600">
+            {Object.entries(form.specs).map(([key, val]) => (
+              <li key={key}>🔹 {key}: {val}</li>
+            ))}
+          </ul>
+        </div>
 
-      {/* Variants */}
-      <div>
-        <label>Variants</label>
-        {variants.map((v, i) => (
-          <div key={i} className="flex gap-2 mb-2">
-            <input
-              type="text"
-              value={v.size}
-              placeholder="Size"
-              onChange={(e) => updateVariant(i, 'size', e.target.value)}
-              className="input w-1/2"
-            />
-            <input
-              type="text"
-              value={v.color}
-              placeholder="Color"
-              onChange={(e) => updateVariant(i, 'color', e.target.value)}
-              className="input w-1/2"
-            />
-            <button type="button" onClick={() => removeVariant(i)} className="text-red-500">×</button>
+        {/* Varyantlar */}
+        <div>
+          <label>Varyantlar</label>
+          <div className="flex gap-2 mb-2">
+            <input placeholder="Beden" value={variant.size || ''} onChange={(e) => setVariant((v) => ({ ...v, size: e.target.value }))} className="input" />
+            <input placeholder="Renk" value={variant.color || ''} onChange={(e) => setVariant((v) => ({ ...v, color: e.target.value }))} className="input" />
+            <button type="button" onClick={addVariant} className="btn">Ekle</button>
           </div>
-        ))}
-        <button type="button" onClick={addVariant} className="text-blue-500 text-sm">+ Add Variant</button>
-      </div>
+          <ul className="text-sm text-gray-600">
+            {form.variants.map((v, i) => (
+              <li key={i}>🧩 {v.size} {v.color}</li>
+            ))}
+          </ul>
+        </div>
 
-      <button type="submit" className="btn bg-blue-600 text-white px-4 py-2 rounded">Create Product</button>
-    </form>
+        <button type="submit" className="btn-primary" disabled={loading}>
+          {loading ? 'Kaydediliyor...' : 'Ürünü Oluştur'}
+        </button>
+      </form>
+    </div>
   );
 }

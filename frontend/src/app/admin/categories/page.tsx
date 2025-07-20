@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface Category {
   _id: string;
@@ -78,7 +79,11 @@ export default function AdminCategoriesPage() {
                 <p className="text-sm text-gray-500">
                   Durum: {cat.isActive ? 'Aktif' : 'Pasif'}
                 </p>
+                
               </div>
+              <Link href={`/admin/categories/${cat._id}/edit`} className="text-blue-600 underline ml-2">
+  Düzenle
+</Link>
               <button
                 onClick={() => handleDelete(cat._id)}
                 className="bg-red-600 text-white px-3 py-1 rounded"

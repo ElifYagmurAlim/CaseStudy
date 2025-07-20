@@ -36,7 +36,40 @@ export const createCategory = async (req: Request, res: Response) => {
   }
 };
 
+export const updateCategory = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, description } = req.body;
 
+    const category = await Category.findById(id);
+    if (!category) return res.status(404).json({ message: 'Kategori bulunamadı' });
+
+    category.name = name || category.name;
+    category.description = description || category.description;
+
+    if (req.file) {
+      category.image = req.file.filename;
+    }
+
+    await category.save();
+    res.json(category);
+  } catch (err) {
+    console.error('Kategori güncellenemedi:', err);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+};
+export const getCategory = async (req: Request, res: Response) => {
+  try {
+    const category = await Category.findById(req.params.id);
+    if (!category) {
+      return res.status(404).json({ message: 'Kategori bulunamadı' });
+    }
+    res.json(category);
+  } catch (err) {
+    console.error('Kategori alınırken hata:', err);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+}
 
 // @desc    Kategori sil
 export const deleteCategory = async (req: Request, res: Response) => {

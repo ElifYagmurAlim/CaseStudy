@@ -109,6 +109,14 @@ export const updateProduct = async (req: Request, res: Response) => {
   }
 };
 
+export const bulkUpdateStatus = async (req, res) => {
+  const { ids, status } = req.body;
+  if (!Array.isArray(ids)) return res.status(400).json({ message: 'ID listesi gerekli' });
+
+  await Product.updateMany({ _id: { $in: ids } }, { active: status });
+  res.json({ message: 'Ürünler güncellendi' });
+};
+
 // @desc    Ürünü sil
 export const deleteProduct = async (req: Request, res: Response) => {
   try {

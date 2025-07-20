@@ -5,9 +5,12 @@ import {
   getRelatedProducts,
   createProduct,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  bulkUpdateStatus,
 } from '../controllers/productController';
 import { upload } from '../middleware/upload';
+import { authMiddleware } from '../middleware/authMiddleware';
+import { adminMiddleware } from '../middleware/adminMiddleware';
 
 const router = express.Router();
 
@@ -28,5 +31,7 @@ router.patch('/:id', updateProduct);
 
 // @route DELETE /api/products/:id
 router.delete('/:id', deleteProduct);
+
+router.patch('/bulk-status', authMiddleware, adminMiddleware, bulkUpdateStatus);
 
 export default router;

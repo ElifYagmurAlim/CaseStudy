@@ -42,6 +42,8 @@ export default function Navbar() {
         <div><Link href="/admin/orders" className="ml-4">
           Customer Orders
         </Link>
+        <Link href="/admin/customers" className="ml-4">Müşteriler</Link>
+
         <Link href="/admin/products" className="ml-4">Products</Link>
         <Link href="/admin/categories" className="ml-4">Categories</Link>
         </div>

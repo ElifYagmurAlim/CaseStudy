@@ -19,6 +19,10 @@ export interface IProduct extends Document {
   }[];
   views: number;
   review: mongoose.Types.ObjectId;
+  active: {
+  type: Boolean,
+  default: true,
+};
 }
 
 const productSchema = new Schema<IProduct>(
@@ -41,6 +45,10 @@ const productSchema = new Schema<IProduct>(
     ],
     views: { type: Number, default: 0 },
     review:{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' },
+    active: {
+  type: Boolean,
+  default: true,
+}
   },
   { timestamps: true }
 );

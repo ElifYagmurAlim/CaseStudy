@@ -2,43 +2,54 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import User from '../models/user';
 import { generateToken } from '../utils/generateToken';
+import crypto from 'crypto';
+import sendEmail from '../utils/sendEmail';
 
 export const registerUser = async (req: Request, res: Response) => {
-  const { email, password, firstName, lastName, phone } = req.body;
+try {
+    const { email, password, firstName, lastName } = req.body;
 
-  try {
-    const userExists = await User.findOne({ email }).select('+password');
-    if (userExists)
-      return res.status(400).json({ message: 'User already exists' });
+    const existing = await User.findOne({ email });
+    if (existing) return res.status(400).json({ message: 'Bu e-posta zaten kayıtlı.' });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashed = await bcrypt.hash(password, 10);
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const verifyLink = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
 
     const user = await User.create({
       email,
-      password: hashedPassword,
+      password: hashed,
       firstName,
       lastName,
-      phone,
+      emailVerificationToken: token,
+      emailVerified: false,
     });
 
-    res.status(201).json({
-      _id: user._id,
-      email: user.email,
-      role: user.role,
-      token: generateToken(user._id.toString()),
-    });
+    await sendEmail(
+      email,
+      'E-posta Doğrulama',
+      `Merhaba ${firstName || ''},\n\nLütfen e-posta adresinizi doğrulamak için aşağıdaki bağlantıya tıklayın:\n\n${verifyLink}\n\nTeşekkürler.`,
+    );
+
+    res.status(201).json({ message: 'Kayıt başarılı. Lütfen e-postanızı doğrulayın.' });
   } catch (err) {
-    console.error('REGISTER error:', err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Kayıt hatası:', err);
+    res.status(500).json({ message: 'Sunucu hatası' });
   }
 };
 
 export const loginUser = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
   try {
+    const { email, password } = req.body;
+
     const user = await User.findOne({ email }).select('+password');;
     if (!user)
       return res.status(400).json({ message: 'Invalid credentials' });
+    
+    if (!user.isVerified && user.role === 'customer') {
+      return res.status(403).json({ message: 'E-posta adresiniz henüz doğrulanmamış. Lütfen e-postanızı kontrol edin.' });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch)
@@ -62,7 +73,6 @@ export const loginUser = async (req: Request, res: Response) => {
 
 export const updatePassword = async (req, res) => {
   try {
-    console.log(req.body);
     const { currentPassword, newPassword } = req.body;
     const user = await User.findById(req.params.id).select('+password');
     if (!user) return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
@@ -79,5 +89,48 @@ export const updatePassword = async (req, res) => {
   } catch (err) {
     console.error('Şifre güncelleme hatası:', err);
     res.status(500).json({ message: 'Sunucu hatası' });
+  }
+};
+
+export const verifyEmail = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.query;
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ message: 'Geçersiz bağlantı.' });
+    }
+
+    const user = await User.findOne({ emailVerificationToken: token });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Doğrulama başarısız veya token süresi dolmuş olabilir.' });
+    }
+
+    user.isVerified = true;
+    user.emailVerificationToken = undefined;
+    await user.save();
+
+    res.status(200).json({ message: 'E-posta başarıyla doğrulandı.' });
+  } catch (err) {
+    console.error('Doğrulama hatası:', err);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+};
+
+export const resendVerificationEmail = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
+    if (user.isVerified) return res.status(400).json({ message: 'Hesap zaten doğrulanmış' });
+
+    const verificationToken = user.verificationToken;
+
+    const url = `http://localhost:3000/verify/${verificationToken}`;
+
+    await sendEmail(user.email, 'E-posta Doğrulama', `Hesabınızı doğrulamak için linke tıklayın: ${url}`);
+    return res.json({ message: 'Doğrulama e-postası yeniden gönderildi' });
+
+  } catch (err) {
+    return res.status(500).json({ message: 'Hata oluştu', error: err });
   }
 };

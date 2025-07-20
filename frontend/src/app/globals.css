@@ -9,3 +9,11 @@ body {
 .input {
   @apply border px-3 py-2 rounded w-full;
 }
+
+
+.btn {
+  @apply px-4 py-1 bg-gray-200 hover:bg-gray-300 rounded;
+}
+.btn-primary {
+  @apply bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700;
+}

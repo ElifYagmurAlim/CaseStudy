@@ -1,5 +1,6 @@
 import express from 'express';
 import { authMiddleware } from '../middleware/authMiddleware';
+import { adminMiddleware } from '../middleware/adminMiddleware';
 import {
   getAllOrders,
   getUserOrders,
@@ -22,6 +23,6 @@ router.post('/', createOrder);
 // @route PATCH /api/orders/:id/status
 router.patch('/:id/status', updateOrderStatus);
 
-router.get('/:id', authMiddleware, getOrderById); // Backend route
+router.get('/:id',  getOrderById); // Backend route
 
 export default router;
