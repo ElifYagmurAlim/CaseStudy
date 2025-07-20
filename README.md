@@ -71,6 +71,10 @@ npm run dev
 bash
 Kopyala
 Düzenle
+5. Frontend'i Başlat
+bash
+Kopyala
+Düzenle
 cd frontend
 npm install
 npm run dev
