@@ -1,3 +1,4 @@
+//yeni
 const nextConfig = {
   reactStrictMode: true,
 };
