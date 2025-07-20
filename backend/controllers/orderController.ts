@@ -34,19 +34,17 @@ export const getUserOrders = async (req: Request, res: Response) => {
 
 export const getOrderById = async (req: Request, res: Response) => {
   try {
-    console.log("a");
-    console.log(req);
-    console.log(req.params.id);
     const order = await Order.findById(req.params.id).populate('items.product');
-    console.log(order);
     if (!order) {
       return res.status(404).json({ message: 'Sipariş bulunamadı' });
     }
 
+    //admin denetimi gelmeli
     // Sadece kullanıcı kendi siparişini görebilsin
     if (order.user.toString() !== req.user?._id.toString()) {
       return res.status(403).json({ message: 'Yetkisiz erişim' });
     }
+    console.log(order);
 
     res.json(order);
   } catch (err) {

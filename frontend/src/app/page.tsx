@@ -146,7 +146,7 @@ export default function HomePage() {
         <h2 className="text-2xl font-semibold mb-4">Kategoriler</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {categories.map(cat => (
-            <Link key={cat._id} href={`/categories/${cat._id}`}>
+            <Link key={cat._id} href={`/product?category=${cat._id}`}>
               <div className="border p-4 rounded text-center hover:shadow transition">
                 <div className="w-24 h-24 relative mx-auto mb-2">
                   <Image

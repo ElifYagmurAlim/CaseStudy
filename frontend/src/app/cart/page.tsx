@@ -21,7 +21,7 @@ export default function CartPage() {
       <h1 className="text-2xl font-bold mb-4">Sepetim</h1>
 
       {items.length === 0 ? (
-        <p>Sepetiniz boş. <Link href="/products" className="text-blue-600">Ürünlere göz atın</Link>.</p>
+        <p>Sepetiniz boş. <Link href="/product" className="text-blue-600">Ürünlere göz atın</Link>.</p>
       ) : (
         <>
           <ul className="divide-y mb-6">

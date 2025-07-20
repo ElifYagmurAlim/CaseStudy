@@ -9,14 +9,12 @@ export interface IReview extends Document {
 }
 
 const reviewSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User', // ✅ referans belirtildi
-    required: true
-  },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
   rating: { type: Number, required: true },
-  comment: { type: String }
+  comment: { type: String },
+  approved: { type: Boolean, default: true },
 }, { timestamps: true });
 
-export default (mongoose.models.Review as Model<IReview>) 
+export default (mongoose.models.Review as Model<IReview>)
   || mongoose.model<IReview>('Review', reviewSchema);

@@ -18,7 +18,12 @@ export interface IProduct extends Document {
     color?: string;
   }[];
   views: number;
-  review: mongoose.Types.ObjectId;
+  review: {
+    comment?: string;
+    rating?: number;
+    user?: mongoose.Types.ObjectId;
+    createdAt?: Date;
+  }[];
   active: {
   type: Boolean,
   default: true,
@@ -44,7 +49,14 @@ const productSchema = new Schema<IProduct>(
       },
     ],
     views: { type: Number, default: 0 },
-    review:{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' },
+    review: [
+      {
+        comment: String,
+        rating: Number,
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        createdAt: { type: Date, default: Date.now }
+      }
+    ],
     active: {
   type: Boolean,
   default: true,

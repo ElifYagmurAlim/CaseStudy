@@ -1,5 +1,6 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import api from '@/lib/axios';
 import ProductCard from '@/components/ProductCard';
@@ -13,6 +14,15 @@ export default function ProductsPage() {
   const [sortBy, setSortBy] = useState('newest');
     const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+
+const searchParams = useSearchParams();
+
+useEffect(() => {
+  const categoryFromUrl = searchParams.get('category');
+  if (categoryFromUrl) {
+    setSelectedCategory(categoryFromUrl);
+  }
+}, []);
 
 useEffect(() => {
   const fetchData = async () => {

@@ -1,37 +1,53 @@
 import express from 'express';
-import {
-  getAllProducts,
-  getProductById,
-  getRelatedProducts,
-  createProduct,
-  updateProduct,
-  deleteProduct,
-  bulkUpdateStatus,
-} from '../controllers/productController';
-import { upload } from '../middleware/upload';
+import * as productController from '../controllers/productController';
 import { authMiddleware } from '../middleware/authMiddleware';
 import { adminMiddleware } from '../middleware/adminMiddleware';
+import { upload } from '../middleware/upload';
 
 const router = express.Router();
 
-// @route GET /api/products
-router.get('/', getAllProducts);
+// Public Routes
+router.get('/', productController.getAllProducts);
+router.get('/:id', productController.getProductById);
+router.get('/:id/related', productController.getRelatedProducts);
+router.get('/:id/viewed-together', productController.getViewedTogether);
 
-// @route GET /api/products/:id
-router.get('/:id', getProductById);
+// Öneri sistemi
+router.post('/:id/viewed', productController.viewCounter);      // görüntülenme + viewedWith update
+router.post('/recent', productController.lastViews);            // tarayıcıdaki son gezilenleri döner
+router.post('/viewed-together', productController.updateViewedTogether); // viewedWith kaydı
 
-// @route GET /products/:id/related
-router.get('/:id/related', getRelatedProducts);
+// Admin Routes
+router.post(
+  '/',
+  authMiddleware,
+  adminMiddleware,
+  upload.array('images'),
+  productController.createProduct
+);
 
-// @route POST /api/products
-router.post('/', upload.array('images', 5), createProduct);
+router.patch(
+  '/:id',
+  authMiddleware,
+  adminMiddleware,
+  productController.updateProduct
+);
 
-// @route PATCH /api/products/:id
-router.patch('/:id', updateProduct);
+router.delete(
+  '/:id',
+  authMiddleware,
+  adminMiddleware,
+  productController.deleteProduct
+);
 
-// @route DELETE /api/products/:id
-router.delete('/:id', deleteProduct);
+router.patch(
+  '/bulk/update-status',
+  authMiddleware,
+  adminMiddleware,
+  productController.bulkUpdateStatus
+);
 
-router.patch('/bulk-status', authMiddleware, adminMiddleware, bulkUpdateStatus);
+// Yorum ekleme
+router.post('/:productId/review', authMiddleware, productController.addReview);
 
 export default router;

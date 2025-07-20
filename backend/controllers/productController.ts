@@ -1,15 +1,15 @@
 import { Request, Response } from 'express';
 import Product from '../models/product';
+import ViewedTogether from '../models/viewedTogether';
 import mongoose from 'mongoose';
+import Order from '../models/order'; 
 
-// @desc    Tüm ürünleri getir
-// controllers/productController.ts
+// Tüm ürünleri getir
 export const getAllProducts = async (req: Request, res: Response) => {
-  const categoryId = req.query.category;
-
   try {
-const filter = categoryId ? { category: new mongoose.Types.ObjectId(categoryId as string) } : {};
-const products = await Product.find(filter).populate('review.user');
+    const categoryId = req.query.category;
+    const filter = categoryId ? { category: new mongoose.Types.ObjectId(categoryId as string) } : {};
+    const products = await Product.find(filter).populate('review.user');
     res.json(products);
   } catch (err) {
     console.error('GET /products error:', err);
@@ -17,6 +17,7 @@ const products = await Product.find(filter).populate('review.user');
   }
 };
 
+// Related Products
 export const getRelatedProducts = async (req: Request, res: Response) => {
   try {
     const current = await Product.findById(req.params.id);
@@ -34,11 +35,10 @@ export const getRelatedProducts = async (req: Request, res: Response) => {
   }
 };
 
-// @desc    ID ile ürün getir
+// ID ile ürün getir
 export const getProductById = async (req: Request, res: Response) => {
   try {
-    const product = await Product.findById(req.params.id)
-  .populate('review.user'); // ✅ Artık hata vermez
+    const product = await Product.findById(req.params.id).populate('review.user');
     if (!product) return res.status(404).json({ message: 'Product not found' });
     res.json(product);
   } catch (err) {
@@ -47,15 +47,12 @@ export const getProductById = async (req: Request, res: Response) => {
   }
 };
 
-// @desc    Yeni ürün oluştur
+// Yeni ürün oluştur
 export const createProduct = async (req: Request, res: Response) => {
   try {
     const files = req.files as Express.Multer.File[];
-    const images = req.files
-          ? Array.isArray(req.files)
-            ? req.files.map((file: any) => file.filename)
-            : []
-          : [];
+    const images = Array.isArray(files) ? files.map(file => file.filename) : [];
+
     const {
       name,
       description,
@@ -67,8 +64,7 @@ export const createProduct = async (req: Request, res: Response) => {
       specs,
       variants,
     } = req.body;
-    
-    // 👇 JSON.parse burada zorunlu (FormData ile string gelir)
+
     const parsedTags = tags ? JSON.parse(tags) : [];
     const parsedSpecs = specs ? JSON.parse(specs) : {};
     const parsedVariants = variants ? JSON.parse(variants) : [];
@@ -95,7 +91,7 @@ export const createProduct = async (req: Request, res: Response) => {
   }
 };
 
-// @desc    Ürünü güncelle
+// Ürün güncelle
 export const updateProduct = async (req: Request, res: Response) => {
   try {
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
@@ -109,15 +105,7 @@ export const updateProduct = async (req: Request, res: Response) => {
   }
 };
 
-export const bulkUpdateStatus = async (req, res) => {
-  const { ids, status } = req.body;
-  if (!Array.isArray(ids)) return res.status(400).json({ message: 'ID listesi gerekli' });
-
-  await Product.updateMany({ _id: { $in: ids } }, { active: status });
-  res.json({ message: 'Ürünler güncellendi' });
-};
-
-// @desc    Ürünü sil
+// Ürünü sil
 export const deleteProduct = async (req: Request, res: Response) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
@@ -126,5 +114,117 @@ export const deleteProduct = async (req: Request, res: Response) => {
   } catch (err) {
     console.error('DELETE /api/products/:id error:', err);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Toplu güncelleme
+export const bulkUpdateStatus = async (req: Request, res: Response) => {
+  const { ids, status } = req.body;
+  if (!Array.isArray(ids)) return res.status(400).json({ message: 'ID listesi gerekli' });
+
+  await Product.updateMany({ _id: { $in: ids } }, { active: status });
+  res.json({ message: 'Ürünler güncellendi' });
+};
+
+// View sayacı artır
+export const viewCounter = async (req: Request, res: Response) => {
+  try {
+    const updated = await Product.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { views: 1 } },
+      { new: true }
+    );
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: 'View sayısı güncellenemedi' });
+  }
+};
+
+// Son görüntülenen ürünler
+export const lastViews = async (req: Request, res: Response) => {
+  try {
+    const products = await Product.find({ _id: { $in: req.body.ids } });
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ message: 'lastViews güncellenemedi' });
+  }
+};
+
+// Viewed-together verisini kaydet
+export const updateViewedTogether = async (req: Request, res: Response) => {
+  try {
+    const { current, recent } = req.body;
+    if (!current || !recent) return res.status(400).json({ message: 'Eksik veri' });
+
+    let doc = await ViewedTogether.findOne({ productId: current });
+    if (!doc) {
+      doc = new ViewedTogether({ productId: current, viewedWith: [] });
+    }
+
+recent.forEach((id: string) => {
+  const objectId = new mongoose.Types.ObjectId(id);
+  if (!doc.viewedWith.some((existingId) => existingId.equals(objectId))) {
+    doc.viewedWith.push(objectId);
+  }
+});
+
+    await doc.save();
+    res.json(doc);
+  } catch (err) {
+    console.error('ViewedTogether update error:', err);
+    res.status(500).json({ message: 'İlişkili ürünler güncellenemedi' });
+  }
+};
+
+// Belirli ürün için önerilen diğer ürünleri getir
+export const getViewedTogether = async (req: Request, res: Response) => {
+  try {
+    const record = await ViewedTogether.findOne({ productId: req.params.id }).populate('viewedWith');
+    res.json(record?.viewedWith || []);
+  } catch (err) {
+    res.status(500).json({ message: 'Önerilen ürünler alınamadı' });
+  }
+};
+
+export const addReview = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user._id;
+    const { comment, rating } = req.body;
+    const { productId } = req.params;
+
+    // Kullanıcı bu ürünü tamamlanmış bir siparişte aldı mı?
+    const order = await Order.findOne({
+      user: userId,
+      status: 'delivered', // sipariş durumu kontrolü
+      'items.product': productId,
+    });
+
+    if (!order) {
+      return res.status(403).json({
+        message: 'Yorum yapmak için ürünü tamamlanmış bir siparişte satın almış olmanız gerekir.',
+      });
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) return res.status(404).json({ message: 'Ürün bulunamadı' });
+
+    // Daha önce yorum yapmış mı?
+    const hasReviewed = product.review.some((r: any) => r.user.toString() === userId.toString());
+    if (hasReviewed) {
+      return res.status(400).json({ message: 'Bu ürüne daha önce yorum yaptınız.' });
+    }
+
+    // Yorumu ekle
+    product.review.push({
+      comment,
+      rating,
+      user: userId,
+    });
+
+    await product.save();
+    res.status(201).json({ message: 'Yorum eklendi', reviews: product.review });
+  } catch (err) {
+    console.error('Yorum ekleme hatası:', err);
+    res.status(500).json({ message: 'Yorum eklenemedi' });
   }
 };

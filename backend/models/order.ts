@@ -17,7 +17,7 @@ export interface IOrder extends Document {
     city: string;
     postalCode: string;
   };
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered';
+  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
 }
 
 const orderSchema = new Schema<IOrder>(
@@ -36,7 +36,7 @@ const orderSchema = new Schema<IOrder>(
       city: String,
       postalCode: String,
     },
-    status: { type: String, enum: ['pending', 'confirmed', 'shipped', 'delivered'], default: 'pending' },
+    status: { type: String, enum: ['pending', 'confirmed', 'shipped', 'delivered', 'camcelled'], default: 'pending' },
   },
   { timestamps: true }
 );

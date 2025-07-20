@@ -54,6 +54,14 @@ export default function ProfileDashboard() {
             <p className="text-sm text-gray-600">Beğendiğin ürünleri kaydet.</p>
           </div>
         </Link>
+
+        {/* Şifre Değiştir */}
+        <Link href="/profile/edit#password">
+          <div className="border p-4 rounded hover:shadow transition cursor-pointer">
+            <h2 className="font-semibold text-lg mb-1">Şifre Değiştir</h2>
+            <p className="text-sm text-gray-600">Kullanıcı Şifresini Değiştir.</p>
+          </div>
+        </Link>
       </div>
     </div>
   );
