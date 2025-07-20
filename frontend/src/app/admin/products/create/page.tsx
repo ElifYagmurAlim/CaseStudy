@@ -79,30 +79,36 @@ const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setLoading(true);
 
-    const formData = new FormData();
-    Object.entries(form).forEach(([key, value]) => {
-      if (key === 'images') {
-        (value as File[]).forEach((file) => formData.append('images', file));
-      } else if (key === 'specs' || key === 'variants') {
-        formData.append(key, JSON.stringify(value));
-      } else {
-        formData.append(key, value as string);
+      const formData = new FormData();
+
+      Object.entries(form).forEach(([key, value]) => {
+        if (key === 'images') {
+          (value as File[]).forEach((file) => formData.append('images', file));
+        } else if (key === 'specs' || key === 'variants') {
+          formData.append(key, JSON.stringify(value));
+        } else if (key === 'tags') {
+          // string "yeni,kış,unisex" → ["yeni", "kış", "unisex"]
+          const tagsArray = (value as string).split(',').map(tag => tag.trim());
+          formData.append('tags', JSON.stringify(tagsArray));
+        } else {
+          formData.append(key, value as string);
+        }
+      });
+
+      try {
+        await api.post('/products', formData);
+        router.push('/admin/products');
+      } catch (err) {
+        console.error('Ürün eklenirken hata:', err);
+      } finally {
+        setLoading(false);
       }
-    });
+    };
 
-    try {
-      await api.post('/products', formData);
-      router.push('/admin/products');
-    } catch (err) {
-      console.error('Ürün eklenirken hata:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded shadow">

@@ -1,28 +1,30 @@
-import mongoose, { Document, Schema , Model } from 'mongoose';
+import mongoose, { Document, Schema, Model } from 'mongoose';
 
 export interface IOrder extends Document {
-  user: mongoose.Types.ObjectId;
+  user?: mongoose.Types.ObjectId; // Misafir siparişleri için optional
   items: {
-    product: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Product',
-      required: true,
-    },
+    product: mongoose.Types.ObjectId;
     qty: number;
     price: number;
   }[];
+  totalPrice: number;
   paymentMethod: string;
   shippingAddress: {
+    fullName: string;
     street: string;
     city: string;
     postalCode: string;
+    phone: string;
   };
   status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+  createdAt: Date;
+  updatedAt: Date;
+
 }
 
 const orderSchema = new Schema<IOrder>(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
     items: [
       {
         product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
@@ -30,17 +32,19 @@ const orderSchema = new Schema<IOrder>(
         price: { type: Number, required: true },
       },
     ],
-    paymentMethod: { type: String, required: true }, // e.g., 'card', 'cash'
+    totalPrice: { type: Number, required: true }, // 💡 BU SATIRI EKLE
+    paymentMethod: { type: String, default: 'cash' },
     shippingAddress: {
+      fullName: String,
       street: String,
       city: String,
       postalCode: String,
+      phone: String
     },
-    status: { type: String, enum: ['pending', 'confirmed', 'shipped', 'delivered', 'camcelled'], default: 'pending' },
+    status: { type: String, enum: ['pending', 'confirmed', 'shipped', 'delivered'], default: 'pending' },
   },
   { timestamps: true }
 );
 
-export default (mongoose.models.Order as Model<IOrder>) 
-    || mongoose.model<IOrder>('Order', orderSchema);
-
+export default (mongoose.models.Order as Model<IOrder>) ||
+  mongoose.model<IOrder>('Order', orderSchema);

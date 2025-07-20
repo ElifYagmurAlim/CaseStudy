@@ -20,6 +20,7 @@ import orderRoutes from './routes/order';
 import reviewRoutes from './routes/review';
 import userRoutes from './routes/user';
 import adminRoutes from './routes/admin';
+import cartRoutes from './routes/cart';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
@@ -28,6 +29,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/cart', cartRoutes);
 
 try {
   mongoose.connect(process.env.MONGO_URI);

@@ -5,11 +5,10 @@ import { Product } from '@/types/types';
 import { useAuth } from '@/store/auth';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { FaHeart, FaRegHeart } from 'react-icons/fa';
-import api from '@/lib/axios';
 import { useState } from 'react';
-import { Heart, HeartOff } from 'lucide-react';
 import { BsHeartFill } from 'react-icons/bs';
+import { Heart, Eye, ShoppingCart, Star } from 'lucide-react';
+import api from '@/lib/axios';
 
 type Props = Product;
 
@@ -23,35 +22,47 @@ export default function ProductCard({
   tags,
   featured,
   variants,
+  sold,
+  views,
+  reviews
 }: Props) {
-  const { addToCart, items } = useCart();
   const { user, updateUser } = useAuth();
+  const { addItem, items } = useCart();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-
-  const currentQty = items.find(item => item.productId === _id)?.qty || 0;
-
-  const isWished = user?.wishlist?.includes(_id);
-
   const [added, setAdded] = useState(false);
 
-  const handleAdd = () => {
-    if (currentQty + 1 > stock) {
-      return alert("Stokta daha fazla ürün yok.");
-    }
-    addToCart({ productId: _id, name, price, qty: 1 , image: images?.[0] });
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1500);
-  };
-
+  const currentQty = items.find(item => item.productId === _id)?.qty || 0;
+  const isWished = user?.wishlist?.includes(_id);
   const mainImage = images?.[0] || '/placeholder.jpg';
+
+  const handleAdd = async () => {
+    if (currentQty + 1 > stock) {
+      return alert('Stokta daha fazla ürün yok.');
+    }
+
+    try {
+      await addItem({
+        productId: _id,
+        name: name,
+        price: price,
+        qty: 1,
+        image: images?.[0] || '/placeholder.jpg',
+      });
+      setAdded(true);
+      setTimeout(() => setAdded(false), 1500);
+    } catch (err) {
+      console.error('Sepete ekleme başarısız:', err);
+      alert('Ürün sepete eklenemedi.');
+    }
+  };
 
   const toggleWishlist = async () => {
     if (!user) return alert('Favorilere eklemek için giriş yapmalısınız');
     try {
       setLoading(true);
       const res = await api.post(`/users/${user._id}/wishlist/${_id}`);
-      updateUser({ wishlist: res.data.wishlist }); // güncellenmiş hali
+      updateUser({ wishlist: res.data.wishlist });
     } catch (err) {
       console.error('Favori işlemi başarısız:', err);
     } finally {
@@ -59,64 +70,80 @@ export default function ProductCard({
     }
   };
 
-
+  const avgRating = reviews?.length
+    ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
+    : null;
 
   return (
-    <div className='relative'>
-    <div className="border p-4 rounded shadow hover:shadow-lg transition">
-      
-      <div className="relative w-full h-48 mb-3">
-        <Image
-          src={`http://localhost:5000/uploads/${mainImage}`}
-          alt={name}
-          fill
-          className="object-cover rounded"
-        />
-      </div>
-      
-
-      {/* Ürün içeriği */}
-      <h3 className="text-lg font-bold">{name}</h3>
-      <p>{price} ₺</p>
-    
-
-      {featured && (
-        <div className="text-xs text-yellow-600 font-semibold mt-1">⭐ Öne Çıkan</div>
-      )}
-
-      {tags?.length > 0 && (
-        <div className="flex flex-wrap gap-1 text-xs text-gray-600 mt-2">
-          {tags.map((tag, idx) => (
-            <span key={idx} className="bg-gray-200 px-2 py-0.5 rounded">{tag}</span>
-          ))}
+    <div className="relative">
+      <div className="border p-4 rounded shadow hover:shadow-lg transition">
+        <div className="relative w-full h-48 mb-3">
+          <Image
+            src={`http://localhost:5000/uploads/${mainImage}`}
+            alt={name}
+            fill
+            className="object-cover rounded"
+          />
         </div>
-      )}
 
-      {variants?.length > 0 && (
-        <p className="text-xs text-gray-500 mt-1">
-          {variants.map(v => `${v.size || ''} ${v.color || ''}`).join(', ')}
-        </p>
-      )}
+        <h3 className="text-lg font-bold">{name}</h3>
+        <p className="font-semibold text-orange-600">{price} ₺</p>
 
-      <div className="flex gap-2 mt-3">
-        <button
-          onClick={handleAdd}
-          disabled={stock === 0}
+        <div className="flex flex-wrap items-center text-xs text-gray-500 mt-2 gap-x-3">
+          <span>📦 Stok: {stock}</span>
+          <span>🛒 Satılan: {sold}</span>
+          <span><Eye size={14} className="inline-block mr-1" /> {views}</span>
+          {avgRating && (
+            <span>
+              <Star size={14} className="inline-block text-yellow-500" fill="#facc15" /> {avgRating}
+            </span>
+          )}
+        </div>
+
+        {featured && (
+          <div className="text-xs text-yellow-600 font-semibold mt-1">
+            ⭐ Öne Çıkan
+          </div>
+        )}
+
+        {tags?.length > 0 && (
+          <div className="flex flex-wrap gap-1 text-xs text-gray-600 mt-2">
+            {tags.map((tag, idx) => (
+              <span
+                key={idx}
+                className="bg-gray-200 px-2 py-0.5 rounded"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {variants?.length > 0 && (
+          <p className="text-xs text-gray-500 mt-1">
+            {variants.map(v => `${v.size || ''} ${v.color || ''}`).join(', ')}
+          </p>
+        )}
+
+        <div className="flex gap-2 mt-3">
+          <button
+            onClick={handleAdd}
+            disabled={stock === 0}
             className={`px-6 py-2 rounded transition-all duration-100 text-sm ${
-            added ? 'bg-green-500' : 'bg-orange-500'
-          } text-white`}
-        >
-          {added ? '✔️ Eklendi' : stock > 0 ? 'Sepete Ekle' : 'Stokta Yok'}
-        </button>
-        <button
-          onClick={() => router.push(`/product/${_id}`)}
-          className="px-6 py-2 rounded transition-all duration-300 bg-blue-500 hover:bg-blue-700 text-white text-sm"
-        >
-          İncele
-        </button>
+              added ? 'bg-green-500' : 'bg-orange-500'
+            } text-white`}
+          >
+            {added ? '✔️ Eklendi' : stock > 0 ? 'Sepete Ekle' : 'Stokta Yok'}
+          </button>
+          <button
+            onClick={() => router.push(`/product/${_id}`)}
+            className="px-6 py-2 rounded transition-all duration-300 bg-blue-500 hover:bg-blue-700 text-white text-sm"
+          >
+            İncele
+          </button>
+        </div>
       </div>
-      </div>
-      {/* Favori butonu */}
+
       <button
         onClick={toggleWishlist}
         className="absolute top-2 right-2 text-red-500 hover:scale-110 transition z-10"
@@ -125,6 +152,6 @@ export default function ProductCard({
       >
         {isWished ? <BsHeartFill size={20} /> : <Heart size={20} />}
       </button>
-</div>
+    </div>
   );
 }

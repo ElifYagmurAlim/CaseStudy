@@ -52,25 +52,30 @@ export default function EditProductPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [productRes, categoryRes] = await Promise.all([
-        api.get(`/products/${id}`),api.get(`/categories`),
-        
-      ]);
+      try {
+        const [productRes, categoryRes] = await Promise.all([
+          api.get(`/products/${id}`),
+          api.get(`/categories`)
+        ]);
 
-      const p = productRes.data;
-      setCategories(categoryRes.data);
-      setForm({
-        name: p.name,
-        description: p.description,
-        price: p.price,
-        stock: p.stock,
-        category: p.category?._id || '',
-        featured: p.featured,
-        tags: p.tags || [],
-        specs: p.specs || {},
-        variants: p.variants || [],
-        images: p.images || [],
-      });
+        const p = productRes.data;
+        setCategories(categoryRes.data);
+
+        setForm({
+          name: p.name || '',
+          description: p.description || '',
+          price: p.price || 0,
+          stock: p.stock || 0,
+          category: typeof p.category === 'string' ? p.category : p.category?._id || '',
+          featured: p.featured || false,
+          tags: Array.isArray(p.tags) ? p.tags : [],
+          specs: p.specs || {},
+          variants: p.variants || [],
+          images: p.images || [],
+        });
+      } catch (err) {
+        console.error('Veri alınırken hata:', err);
+      }
     };
 
     fetchData();
@@ -81,6 +86,7 @@ export default function EditProductPage() {
   ) => {
     const { name, value, type } = e.target;
     const input = e.target as HTMLInputElement;
+
     setForm((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? input.checked : value,
@@ -130,7 +136,6 @@ export default function EditProductPage() {
     <div className="max-w-4xl mx-auto p-6 bg-white rounded shadow">
       <h1 className="text-2xl font-bold mb-6">Ürün Düzenle</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
-
         <input
           name="name"
           placeholder="Ürün Adı"
@@ -188,7 +193,10 @@ export default function EditProductPage() {
           onChange={(e) =>
             setForm((prev) => ({
               ...prev,
-              tags: e.target.value.split(',').map((t) => t.trim()),
+              tags: e.target.value
+                .split(',')
+                .map((t) => t.trim())
+                .filter(Boolean),
             }))
           }
           className="input"
@@ -204,7 +212,7 @@ export default function EditProductPage() {
           <label>Öne Çıkan</label>
         </div>
 
-        {/* Specs */}
+        {/* Teknik Özellikler */}
         <div>
           <label>Teknik Özellikler</label>
           <div className="flex gap-2 mb-2">
@@ -231,7 +239,7 @@ export default function EditProductPage() {
           </ul>
         </div>
 
-        {/* Variants */}
+        {/* Varyantlar */}
         <div>
           <label>Varyantlar</label>
           <div className="flex gap-2 mb-2">

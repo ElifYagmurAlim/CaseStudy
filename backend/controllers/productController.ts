@@ -1,15 +1,23 @@
 import { Request, Response } from 'express';
 import Product from '../models/product';
 import ViewedTogether from '../models/viewedTogether';
-import mongoose from 'mongoose';
+import mongoose , { Types } from 'mongoose';
 import Order from '../models/order'; 
+import Review from '../models/review';
 
 // Tüm ürünleri getir
 export const getAllProducts = async (req: Request, res: Response) => {
   try {
     const categoryId = req.query.category;
     const filter = categoryId ? { category: new mongoose.Types.ObjectId(categoryId as string) } : {};
-    const products = await Product.find(filter).populate('review.user');
+    const products = await Product.find(filter).populate({
+  path: 'reviews',
+  populate: {
+    path: 'user',
+    select: 'firstName lastName',
+  },
+});
+;
     res.json(products);
   } catch (err) {
     console.error('GET /products error:', err);
@@ -26,7 +34,18 @@ export const getRelatedProducts = async (req: Request, res: Response) => {
     const related = await Product.find({
       category: current.category,
       _id: { $ne: req.params.id },
-    }).limit(4);
+    })
+      .limit(4)
+      .populate('category') // kategorinin adı gelsin
+      .populate({
+        path: 'reviews',
+        select: 'rating comment user',
+        populate: {
+          path: 'user',
+          select: 'firstName lastName',
+        },
+      })
+      .lean(); // gereksiz mongoose metadata'dan kurtul
 
     res.json(related);
   } catch (err) {
@@ -38,9 +57,15 @@ export const getRelatedProducts = async (req: Request, res: Response) => {
 // ID ile ürün getir
 export const getProductById = async (req: Request, res: Response) => {
   try {
-    const product = await Product.findById(req.params.id).populate('review.user');
+    const product = await Product.findById(req.params.id).lean();
+
     if (!product) return res.status(404).json({ message: 'Product not found' });
-    res.json(product);
+
+    const reviews = await Review.find({ product: product._id })
+      .populate('user', 'firstName lastName')
+      .sort({ createdAt: -1 });
+
+    res.json({ ...product, reviews }); // frontend'e birleşik olarak gönderiyoruz
   } catch (err) {
     console.error('GET /api/products/:id error:', err);
     res.status(500).json({ message: 'Server error' });
@@ -188,14 +213,15 @@ export const getViewedTogether = async (req: Request, res: Response) => {
 
 export const addReview = async (req: Request, res: Response) => {
   try {
+    console.log("a");
     const userId = req.user._id;
     const { comment, rating } = req.body;
     const { productId } = req.params;
 
-    // Kullanıcı bu ürünü tamamlanmış bir siparişte aldı mı?
+    // 1. Kullanıcı ürünü gerçekten teslim almış mı kontrolü
     const order = await Order.findOne({
       user: userId,
-      status: 'delivered', // sipariş durumu kontrolü
+      status: 'delivered',
       'items.product': productId,
     });
 
@@ -205,26 +231,53 @@ export const addReview = async (req: Request, res: Response) => {
       });
     }
 
-    const product = await Product.findById(productId);
-    if (!product) return res.status(404).json({ message: 'Ürün bulunamadı' });
-
-    // Daha önce yorum yapmış mı?
-    const hasReviewed = product.review.some((r: any) => r.user.toString() === userId.toString());
-    if (hasReviewed) {
-      return res.status(400).json({ message: 'Bu ürüne daha önce yorum yaptınız.' });
-    }
-
-    // Yorumu ekle
-    product.review.push({
-      comment,
-      rating,
+    // 2. Daha önce yorum yapmış mı kontrolü (Review koleksiyonundan)
+    const existingReview = await Review.findOne({
+      product: productId,
       user: userId,
     });
 
+    if (existingReview) {
+      return res.status(400).json({ message: 'Bu ürüne daha önce yorum yaptınız.' });
+    }
+
+    // 3. Yeni yorumu oluştur
+const newReview = await Review.create({
+  product: productId,
+  user: userId,
+  comment,
+  rating,
+});
+
+    await newReview.save();
+
+    // 4. Product'a referans olarak review id'sini ekle
+    const product = await Product.findById(productId);
+    if (!product) return res.status(404).json({ message: 'Ürün bulunamadı' });
+
+product.reviews.push(newReview._id as Types.ObjectId); // 👈 Type cast ekledik
     await product.save();
-    res.status(201).json({ message: 'Yorum eklendi', reviews: product.review });
+
+    res.status(201).json({ message: 'Yorum eklendi', review: newReview });
   } catch (err) {
     console.error('Yorum ekleme hatası:', err);
     res.status(500).json({ message: 'Yorum eklenemedi' });
+  }
+};
+
+export const getAllReviewsForProduct = async (req: Request, res: Response) => {
+  try {
+    const product = await Product.findById(req.params.id)
+      .populate({
+        path: 'reviews',
+        populate: { path: 'user', select: 'firstName lastName' },
+      });
+
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+
+    res.json({ reviews: product.reviews });
+  } catch (err) {
+    console.error('GET /products/:id/all-reviews error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 };

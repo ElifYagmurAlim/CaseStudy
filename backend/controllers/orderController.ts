@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Order from '../models/order';
 import Product from '../models/product';
+import product from '../models/product';
 
 // @desc    Admin: Tüm siparişleri getir
 export const getAllOrders = async (_req: Request, res: Response) => {
@@ -41,7 +42,7 @@ export const getOrderById = async (req: Request, res: Response) => {
 
     //admin denetimi gelmeli
     // Sadece kullanıcı kendi siparişini görebilsin
-    if (order.user.toString() !== req.user?._id.toString()) {
+  if (order.user && req.user && order.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Yetkisiz erişim' });
     }
     console.log(order);
@@ -65,38 +66,52 @@ export const getOrderById = async (req: Request, res: Response) => {
 
 // @desc    Yeni sipariş oluştur
 export const createOrder = async (req: Request, res: Response) => {
-  const { user, items, shippingAddress, paymentMethod } = req.body;
+  const { user, items, address, paymentMethod = 'cash' } = req.body;
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ message: 'Sipariş ürünleri boş olamaz' });
+  }
 
   try {
+    // Stok kontrolü
     for (const item of items) {
-    const product = await Product.findById(item.product);
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
+      const product = await Product.findById(item.product);
+      if (!product) {
+        return res.status(404).json({ message: 'Ürün bulunamadı' });
+      }
+      if (product.stock < item.qty) {
+        return res.status(400).json({
+          message: `${product.name} ürünü için stok yetersiz`,
+        });
+      }
     }
-    if (product.stock < item.qty) {
-      return res.status(400).json({ message: `${product.name} is out of stock or quantity too high` });
-    }
-}
-    const order = await Order.create({
-      user,
-      items,
-      shippingAddress,
+    const totalPrice = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+
+    // Sipariş oluştur
+    const newOrder = await Order.create({
+      user: user || null, // null olabilir, misafir siparişi
+      items: items.map(item => ({
+        product: item.product,
+        qty: item.qty,
+        price: item.price,
+      })),
+      shippingAddress: address,
       paymentMethod,
-      status: 'pending'
+      status: 'pending',
+      totalPrice: totalPrice,
     });
 
-    // Sipariş başarıyla oluşturulduktan sonra
-    for (const item of req.body.items) {
-      await Product.findByIdAndUpdate(item.product, {
-        $inc: { stock: -item.qty, sold: +item.qty }
+    // Stok güncelleme
+    for (const item of items) {
+      await Product.findByIdAndUpdate(item.productId, {
+        $inc: { stock: -item.qty, sold: item.qty },
       });
     }
 
-
-    res.status(201).json({ message: 'Order created', order });
+    res.status(201).json({ message: 'Sipariş oluşturuldu', order: newOrder });
   } catch (err) {
     console.error('POST /api/orders error:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Sunucu hatası' });
   }
 };
 
@@ -107,10 +122,11 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Order not found' });
-
+    
     order.status = status;
-    await order.save();
+    order.totalPrice = order.items.reduce((sum, item) => sum + item.price * item.qty, 0);
 
+    await order.save();
     res.json({ message: 'Order status updated', order });
   } catch (err) {
     console.error('PATCH /api/orders/:id/status error:', err);

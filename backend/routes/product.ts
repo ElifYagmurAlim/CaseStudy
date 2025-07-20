@@ -48,6 +48,11 @@ router.patch(
 );
 
 // Yorum ekleme
-router.post('/:productId/review', authMiddleware, productController.addReview);
+router.post('/:productId/reviews', authMiddleware, productController.addReview);
+
+router.get('/:id/viewed-together', authMiddleware, productController.getAllReviewsForProduct);
+
+
+
 
 export default router;

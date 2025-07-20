@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import api from '@/lib/axios';
+import Link from 'next/link';
 
 interface OrderItem {
   product?: { name: string };
@@ -15,6 +16,14 @@ interface Order {
   user: { email: string };
   status: 'pending' | 'confirmed' | 'shipped' | 'delivered';
   createdAt: string;
+  paymentMethod: string;
+  shippingAddress: {
+    fullName?: string;
+    street?: string;
+    city?: string;
+    postalCode?: string;
+    phone?: string;
+  };
   items: OrderItem[];
 }
 
@@ -41,7 +50,7 @@ export default function AdminOrderDetailPage() {
     try {
       setUpdating(true);
       const res = await api.patch(`/orders/${id}/status`, { status });
-      setOrder(res.data);
+      setOrder(res.data.order); // Not: controller'da `order` objesi içinde dönüyor
     } catch (err) {
       console.error('Durum güncelleme hatası:', err);
     } finally {
@@ -51,12 +60,29 @@ export default function AdminOrderDetailPage() {
 
   if (!order) return <p className="p-6">Yükleniyor...</p>;
 
+  const total = order.items.reduce((sum, item) => sum + item.price * item.qty, 0);
+
   return (
     <div className="max-w-3xl mx-auto p-6">
+      <div className="mb-4">
+        <Link href="/admin/orders" className="text-blue-600 underline text-sm">
+          ← Sipariş listesine dön
+        </Link>
+      </div>
+
       <h1 className="text-xl font-bold mb-4">Sipariş Detayı</h1>
       <p><strong>Email:</strong> {order.user?.email}</p>
       <p><strong>Durum:</strong> {order.status}</p>
       <p><strong>Tarih:</strong> {new Date(order.createdAt).toLocaleDateString()}</p>
+      <p><strong>Ödeme Yöntemi:</strong> {order.paymentMethod}</p>
+
+      <div className="my-4">
+        <h3 className="font-semibold mb-2">Gönderim Adresi</h3>
+        <p>{order.shippingAddress?.fullName}</p>
+        <p>{order.shippingAddress?.street}, {order.shippingAddress?.city}</p>
+        <p>{order.shippingAddress?.postalCode}</p>
+        <p>{order.shippingAddress?.phone}</p>
+      </div>
 
       <div className="my-4">
         <h3 className="font-semibold mb-2">Ürünler</h3>
@@ -67,6 +93,10 @@ export default function AdminOrderDetailPage() {
             </li>
           ))}
         </ul>
+      </div>
+
+      <div className="mt-4 font-semibold">
+        <p>Toplam: {total.toFixed(2)} ₺</p>
       </div>
 
       <div className="mt-6">

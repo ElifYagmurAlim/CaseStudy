@@ -1,167 +1,92 @@
 'use client';
 
+import { useState } from 'react';
 import { useCart } from '@/store/cart';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/store/auth';
 import api from '@/lib/axios';
+import { useRouter } from 'next/navigation';
 
 export default function CheckoutPage() {
-  const { items, total, clearCart } = useCart();
-  const router = useRouter();
   const { user } = useAuth();
+  const { items, clearCart } = useCart();
+  const router = useRouter();
 
-  const [savedAddresses, setSavedAddresses] = useState<string[]>([]);
-  const [selectedAddress, setSelectedAddress] = useState('');
-  const [customAddress, setCustomAddress] = useState('');
-  const [useCustomAddress, setUseCustomAddress] = useState(false);
+  const [form, setForm] = useState({
+    fullName: '',
+    street: '',
+    city: '',
+    postalCode: '',
+    phone: '',
+    paymentMethod: 'cash',
+  });
 
-  const [payment, setPayment] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const [guestInfo, setGuestInfo] = useState({ name: '', email: '' });
+  const totalPrice = items.reduce((sum, item) => sum + item.price * item.qty, 0);
 
-  useEffect(() => {
-    if (user?._id) {
-      api.get(`/users/${user._id}/addresses`).then((res) => {
-        setSavedAddresses(res.data || []);
-      }).catch((err) => {
-        console.error('Adresler alınamadı:', err);
-      });
-    }
-  }, [user]);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
-  const handleCheckout = async () => {
-    const shippingAddress = useCustomAddress ? customAddress : selectedAddress;
+  const handleSubmit = async () => {
+    if (items.length === 0) return alert('Sepet boş');
 
-    if (!shippingAddress || !payment) {
-      alert('Lütfen adres ve ödeme bilgilerini doldurun.');
-      return;
-    }
-
-    if (!user && (!guestInfo.name || !guestInfo.email)) {
-      alert('Lütfen isim ve email girin (misafir sipariş).');
-      return;
+    const { fullName, street, city, postalCode, phone } = form;
+    if (!fullName || !street || !city || !postalCode || !phone) {
+      return alert('Lütfen tüm alanları doldurun');
     }
 
-    if (payment === 'card' && cardNumber.length < 12) {
-      alert('Geçerli bir kart numarası girin.');
-      return;
-    }
-
-    const order = {
-      user: user?._id || null,
-      guest: user ? null : guestInfo,
-      shippingAddress,
-      paymentMethod: payment,
-      items: items.map((item) => ({
+    const payload = {
+      user: user?._id || null, // login olanlar için kullanıcı id'si
+      items: items.map(item => ({
         product: item.productId,
-        name: item.name,
         qty: item.qty,
         price: item.price,
       })),
+      shippingAddress: form,
+      paymentMethod: form.paymentMethod,
     };
 
     try {
-      await api.post('/orders', order);
+      setLoading(true);
+      await api.post('/orders', payload);
       alert('Sipariş başarıyla oluşturuldu!');
       clearCart();
-      router.push('/order-confirmation');
+      router.push('/order-confirmation'); // ya da /thank-you
     } catch (err) {
       console.error('Sipariş oluşturulamadı:', err);
-      alert('Bir hata oluştu.');
+      alert('Sipariş oluşturulamadı.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-xl mx-auto p-4 space-y-4">
-      <h1 className="text-2xl font-bold mb-4">Checkout</h1>
+    <div className="max-w-2xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-4">Siparişi Tamamla</h1>
 
-      {/* Misafir Bilgileri */}
-      {!user && (
-        <div className="border p-4 rounded bg-gray-50">
-          <h3 className="font-semibold mb-2">Misafir Bilgileri</h3>
-          <input
-            type="text"
-            placeholder="Ad Soyad"
-            value={guestInfo.name}
-            onChange={(e) => setGuestInfo({ ...guestInfo, name: e.target.value })}
-            className="w-full border p-2 mb-2 rounded"
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={guestInfo.email}
-            onChange={(e) => setGuestInfo({ ...guestInfo, email: e.target.value })}
-            className="w-full border p-2 mb-2 rounded"
-          />
-        </div>
-      )}
+      <div className="space-y-4">
+        <input name="fullName" placeholder="Ad Soyad" onChange={handleChange} className="w-full border p-2 rounded" />
+        <input name="street" placeholder="Adres" onChange={handleChange} className="w-full border p-2 rounded" />
+        <input name="city" placeholder="Şehir" onChange={handleChange} className="w-full border p-2 rounded" />
+        <input name="postalCode" placeholder="Posta Kodu" onChange={handleChange} className="w-full border p-2 rounded" />
+        <input name="phone" placeholder="Telefon" onChange={handleChange} className="w-full border p-2 rounded" />
 
-      {/* Adres Seçimi */}
-      <div>
-        <label className="block font-medium mb-1">Adres Seçimi</label>
-        {user && savedAddresses.length > 0 && !useCustomAddress ? (
-          <select
-            className="w-full border rounded p-2 mb-2"
-            value={selectedAddress}
-            onChange={(e) => setSelectedAddress(e.target.value)}
-          >
-            <option value="">Bir adres seçin</option>
-            {savedAddresses.map((addr, i) => (
-              <option key={i} value={addr}>{addr}</option>
-            ))}
-          </select>
-        ) : null}
-
-        {useCustomAddress && (
-          <textarea
-            placeholder="Yeni adres girin..."
-            className="w-full border rounded p-2 mb-2"
-            value={customAddress}
-            onChange={(e) => setCustomAddress(e.target.value)}
-          />
-        )}
-
-        <button
-          className="text-sm text-blue-600 underline"
-          onClick={() => setUseCustomAddress((prev) => !prev)}
-        >
-          {useCustomAddress ? 'Kayıtlı adresi seç' : 'Yeni adres gir'}
-        </button>
-      </div>
-
-      {/* Ödeme Yöntemi */}
-      <div>
-        <label className="block font-medium">Ödeme Yöntemi</label>
-        <select
-          className="w-full border rounded p-2 mb-2"
-          value={payment}
-          onChange={(e) => setPayment(e.target.value)}
-        >
-          <option value="">Seçiniz</option>
-          <option value="card">Kredi Kartı</option>
+        <select name="paymentMethod" value={form.paymentMethod} onChange={handleChange} className="w-full border p-2 rounded">
           <option value="cash">Kapıda Ödeme</option>
+          <option value="credit">Kredi Kartı (manuel)</option>
         </select>
 
-        {payment === 'card' && (
-          <input
-            type="text"
-            placeholder="Kart Numarası (sahte)"
-            className="w-full border rounded p-2"
-            value={cardNumber}
-            onChange={(e) => setCardNumber(e.target.value)}
-          />
-        )}
-      </div>
+        <div className="text-right text-lg font-semibold">
+          Toplam: {totalPrice.toFixed(2)} ₺
+        </div>
 
-      <div className="text-right mt-4">
-        <p className="text-xl font-semibold">Toplam: {total()} ₺</p>
         <button
-          onClick={handleCheckout}
-          className="bg-green-600 text-white px-6 py-2 rounded mt-2"
+          onClick={handleSubmit}
+          disabled={loading}
+          className="bg-blue-600 text-white px-4 py-2 rounded w-full"
         >
-          Siparişi Tamamla
+          {loading ? 'İşleniyor...' : 'Siparişi Gönder'}
         </button>
       </div>
     </div>

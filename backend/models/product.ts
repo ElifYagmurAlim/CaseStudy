@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 import '../models/category';
 import '../models/review';
 
@@ -18,12 +18,7 @@ export interface IProduct extends Document {
     color?: string;
   }[];
   views: number;
-  review: {
-    comment?: string;
-    rating?: number;
-    user?: mongoose.Types.ObjectId;
-    createdAt?: Date;
-  }[];
+  reviews: Types.ObjectId[];
   active: {
   type: Boolean,
   default: true,
@@ -49,14 +44,7 @@ const productSchema = new Schema<IProduct>(
       },
     ],
     views: { type: Number, default: 0 },
-    review: [
-      {
-        comment: String,
-        rating: Number,
-        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-        createdAt: { type: Date, default: Date.now }
-      }
-    ],
+    reviews: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }],
     active: {
   type: Boolean,
   default: true,
