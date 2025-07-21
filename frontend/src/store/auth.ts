@@ -1,21 +1,5 @@
 import { create } from 'zustand';
-
-interface Address {
-  street: string;
-  city: string;
-  postalCode: string;
-}
-
-interface User {
-  _id: string;
-  email: string;
-  role: string;
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
-  addresses?: Address[];
-  wishlist?: string[];
-}
+import { User } from '@/types/user';
 
 interface AuthStore {
   user: User | null;

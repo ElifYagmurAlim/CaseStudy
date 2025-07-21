@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { verifyEmail } from '@/api/authService';
+import { isAxiosError } from 'axios';
 
 const Verify = () => {
   const router = useRouter();
@@ -20,11 +21,19 @@ const Verify = () => {
         setStatus('success');
         setMessage(msg);
         setTimeout(() => router.push('/login'), 3000);
-      } catch (err: any) {
-        setStatus('error');
-        setMessage(err?.response?.data?.message || err.message || 'Doğrulama başarısız.');
-      }
-    };
+      } 
+      catch (err: unknown) {
+                    if (isAxiosError(err)) {
+                      const message = err.response?.data?.message;
+                        setMessage(message || 'Doğrulama başarısız.');
+                        setStatus('error');      
+                      } else {
+                      setMessage('Bilinmeyen bir hata oluştu.');
+                      setStatus('error');      
+                    }
+                  }
+        };
+    
 
     verify();
   }, [token, router]);

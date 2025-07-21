@@ -6,9 +6,21 @@ import crypto from 'crypto';
 import sendEmail from '../utils/sendEmail';
 import { Roles } from '../constants/roles';
 
+interface LoginBody {
+  email: string;
+  password: string;
+}
+
+interface RegisterBody {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+}
+
 export const registerUser = async (req: Request, res: Response) => {
 try {
-    const { email, password, firstName, lastName } = req.body;
+    const { email, password, firstName, lastName } = req.body as RegisterBody;
 
     const existing = await User.findOne({ email });
     if (existing) return res.status(400).json({ message: 'Bu e-posta zaten kayıtlı.' });
@@ -42,7 +54,7 @@ try {
 
 export const loginUser = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body as LoginBody;
 
     const user = await User.findOne({ email }).select('+password');;
     if (!user)
@@ -72,7 +84,7 @@ export const loginUser = async (req: Request, res: Response) => {
   }
 };
 
-export const updatePassword = async (req, res) => {
+export const updatePassword = async (req: Request, res: Response) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const user = await User.findById(req.params.id).select('+password');

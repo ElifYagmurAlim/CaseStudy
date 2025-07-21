@@ -5,6 +5,7 @@ import { useCart } from '@/store/cart';
 import { useAuth } from '@/store/auth';
 import { createOrder } from '@/api/orderService';
 import { useRouter } from 'next/navigation';
+import { ALERTS } from '@/constants/messages';
 
 interface Address {
   street: string;
@@ -47,7 +48,7 @@ export default function CheckoutPage() {
   };
 
  const handleSubmit = async () => {
-  if (items.length === 0) return alert('Sepet boş');
+  if (items.length === 0) return alert(ALERTS.EMPTY_CHART);
 
   const { street, city, postalCode } = form;
   if (!street || !city || !postalCode) {
@@ -68,12 +69,12 @@ export default function CheckoutPage() {
     try {
     setLoading(true);
     await createOrder(payload);
-    alert('Sipariş başarıyla oluşturuldu!');
+    alert(ALERTS.ORDER_CREATED);
     clearCart();
     router.push('/order-confirmation');
   } catch (err) {
     console.error('Sipariş oluşturulamadı:', err);
-    alert('Sipariş oluşturulamadı.');
+    alert(ALERTS.ORDER_CREATION_FAILED);
   } finally {
     setLoading(false);
   }

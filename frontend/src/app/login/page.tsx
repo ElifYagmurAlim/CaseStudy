@@ -9,6 +9,7 @@ import { isAxiosError } from 'axios';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/store/auth'; 
 import { resendVerification } from '@/api/authService';
+import { ALERTS } from '@/constants/messages';
 
 const schema = z.object({
   email: z.string().email('Geçerli bir e-posta girin'),
@@ -61,10 +62,16 @@ const handleResend = async () => {
   if (!emailForResend) return;
   try {
     await resendVerification(emailForResend);
-    alert('Doğrulama e-postası yeniden gönderildi.');
-  } catch (err: any) {
-    alert(err.response?.data?.message || 'Gönderim sırasında hata oluştu.');
-  }
+    alert(ALERTS.RESEND_EMAIL);
+  } catch (err: unknown) {
+      if (isAxiosError(err)) {
+        const message = err.response?.data?.message;
+          alert(message || ALERTS.REVIEW);
+      } else {
+        console.error(err);
+        alert(ALERTS.SOMETHING_WENT_WRONG);
+      }
+    }
 };
 
   return (

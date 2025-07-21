@@ -111,7 +111,6 @@ export default function EditProductPage() {
     try {
       const selectedCategory = categories.find(cat => cat._id === form.category);
 
-      
       await updateProduct(id as string, {
         ...form,
         category: selectedCategory ?? { _id: form.category, name: '' }, // fallback eklendi
@@ -204,3 +203,4 @@ console.log(form);
     </div>
   );
 }
+

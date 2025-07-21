@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createCategory } from '@/api/categoryService';
+import { ALERTS } from '@/constants/messages';
 
 export default function CreateCategoryPage() {
   const router = useRouter();
@@ -33,7 +34,7 @@ export default function CreateCategoryPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!file) return alert('Lütfen bir görsel seçin.');
+    if (!file) return alert(ALERTS.SELECT_IMG);
 
     const formData = new FormData();
     formData.append('name', form.name);
@@ -43,11 +44,11 @@ export default function CreateCategoryPage() {
 
     try {
       await createCategory(formData);
-      alert('Kategori oluşturuldu');
+      alert(ALERTS.CATHEGORY_CREATED);
       router.push('/admin/categories');
     } catch (err) {
       console.error('Kategori oluşturma hatası:', err);
-      alert('Bir hata oluştu.');
+      alert(ALERTS.SOMETHING_WENT_WRONG);
     }
   };
 

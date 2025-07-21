@@ -2,23 +2,25 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Star } from 'lucide-react';
 import { getProductById } from '@/api/productService';
-import { Review, Product } from '@/types/product'
+import { Star } from 'lucide-react';
+import { Product } from '@/types/product';
 
 export default function ProductReviewsPage() {
-  const { id } = useParams();
+const params = useParams();
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const id = typeof params.id === 'string' ? params.id : params.id?.[0] ?? '';
 
   useEffect(() => {
     if (!id) return;
 
     const fetchProduct = async () => {
       try {
-        const product = await getProductById(id as string);
-        setProduct(product);
+        const data = await getProductById(id);
+        setProduct(data);
       } catch (err) {
         console.error("Yorumlar yüklenemedi:", err);
       } finally {
@@ -49,11 +51,11 @@ export default function ProductReviewsPage() {
                 <div className="flex gap-1">
                   {[...Array(r.rating)].map((_, i) => (
                     <Star 
-                      key={i} 
-                      size={16} 
-                      className="text-yellow-500" 
-                      color="#facc15" 
-                      fill="#facc15" 
+                    key={i} 
+                    size={16} 
+                    className="text-yellow-500" 
+                    color='#facc15' 
+                    fill='#facc15'                    
                     />
                   ))}
                 </div>

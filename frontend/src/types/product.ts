@@ -41,11 +41,13 @@ export interface Variant {
 }
 
 export interface Review {
-  comment: string;
-  rating: number;
   user: {
     _id: string;
-    firstName: string;
-    lastName: string;
+    name?: string;
+    firstName?: string;
+    lastName?: string;
   };
+  rating: number;
+  comment: string;
+  approved?: boolean;
 }

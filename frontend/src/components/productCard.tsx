@@ -8,7 +8,9 @@ import Image from 'next/image';
 import { useState } from 'react';
 import { BsHeartFill } from 'react-icons/bs';
 import { Heart, Eye, ShoppingCart, Star } from 'lucide-react';
-import api from '@/lib/axios';
+import { toggleWishlist } from '@/api/userService'; // Ekle
+import { PLACEHOLDER_IMAGE } from '@/constants';
+import { ALERTS } from '@/constants/messages';
 
 type Props = Product;
 
@@ -34,11 +36,11 @@ export default function ProductCard({
 
   const currentQty = items.find(item => item.productId === _id)?.qty || 0;
   const isWished = user?.wishlist?.includes(_id);
-  const mainImage = images?.[0] || '/placeholder.jpg';
+  const mainImage = images?.[0] || PLACEHOLDER_IMAGE ;
 
   const handleAdd = async () => {
     if (currentQty + 1 > stock) {
-      return alert('Stokta daha fazla ürün yok.');
+      return alert(ALERTS.NOT_ENOUGH_STOCK);
     }
 
     try {
@@ -53,16 +55,16 @@ export default function ProductCard({
       setTimeout(() => setAdded(false), 1500);
     } catch (err) {
       console.error('Sepete ekleme başarısız:', err);
-      alert('Ürün sepete eklenemedi.');
+      alert(ALERTS.ADD_TO_CART_FAILED);
     }
   };
 
-  const toggleWishlist = async () => {
-    if (!user) return alert('Favorilere eklemek için giriş yapmalısınız');
+  const toggleWishlistHandler = async () => {
+    if (!user) return alert(ALERTS.LOGIN_REQUIRED);
     try {
       setLoading(true);
-      const res = await api.post(`/users/${user._id}/wishlist/${_id}`);
-      updateUser({ wishlist: res.data.wishlist });
+      const updatedWishlist = await toggleWishlist(user._id, _id);
+      updateUser({ wishlist: updatedWishlist });
     } catch (err) {
       console.error('Favori işlemi başarısız:', err);
     } finally {
@@ -80,7 +82,7 @@ export default function ProductCard({
         <div>
           <div className="relative w-full h-48 mb-3">
             <Image
-              src={`http://localhost:5000/uploads/${mainImage}`}
+            src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${mainImage}`}
               alt={name}
               fill
               className="object-cover rounded"
@@ -145,7 +147,7 @@ export default function ProductCard({
       </div>
 
       <button
-        onClick={toggleWishlist}
+        onClick={toggleWishlistHandler}
         className="absolute top-2 right-2 text-red-500 hover:scale-110 transition z-10"
         disabled={loading}
         title="Favorilere ekle veya kaldır"

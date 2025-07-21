@@ -60,7 +60,7 @@ export default function AdminCategoriesPage() {
             <div key={cat._id} className="border rounded p-4 flex gap-4 items-center">
               <div className="w-16 h-16 relative">
                 <Image
-                  src={`http://localhost:5000/uploads/${cat.image}`}
+                src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${cat.image}`}
                   alt={cat.name}
                   layout="fill"
                   objectFit="cover"

@@ -1,19 +1,32 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { PLACEHOLDER_IMAGE, RECENTLY_VIEWED_KEY } from '@/constants';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import api from '@/lib/axios';
 import { useCart } from '@/store/cart';
 import { useAuth } from '@/store/auth';
 import { BsHeartFill } from 'react-icons/bs';
 import { Heart, Star } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
-import { useRef } from 'react';
-import { Product, Variant, Review } from '@/types/product';
+import { Product, Review } from '@/types/product';
+import {
+  getProductById,
+  getRelatedProducts,
+  getViewedTogether,
+  markProductAsViewed,
+  updateViewedTogether
+} from '@/api/productService';
+import {
+  canReviewProduct,
+  submitReview
+} from '@/api/reviewService';
+import { ALERTS } from '@/constants/messages';
 
 export default function ProductDetailPage() {
-  const { id } = useParams();
+  const rawId = useParams().id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
+
   const router = useRouter();
   const { addItem } = useCart();
   const { user, updateUser } = useAuth();
@@ -34,16 +47,16 @@ export default function ProductDetailPage() {
   const fetchProduct = useCallback(async () => {
     if (!id) return;
 
-    const [productRes, relatedRes, viewedRes] = await Promise.all([
-      api.get(`/products/${id}`),
-      api.get(`/products/${id}/related`),
-      api.get(`/products/${id}/viewed-together`)
+    const [productData, relatedData, viewedData] = await Promise.all([
+      getProductById(id),
+      getRelatedProducts(id),
+      getViewedTogether(id)
     ]);
 
-    setProduct(productRes.data);
-    setRelated(relatedRes.data);
-    setViewedTogether(viewedRes.data || []);
-    setLastReviews(productRes.data.reviews?.slice(-3).reverse() || []);
+    setProduct(productData);
+    setRelated(relatedData);
+    setViewedTogether(viewedData);
+    setLastReviews(productData.reviews?.slice(-3).reverse() || []);
   }, [id]);
 
   useEffect(() => {
@@ -52,26 +65,22 @@ export default function ProductDetailPage() {
       if (!id || viewedOnce.current) return;
 
       try {
-        
-        await api.post(`/products/${id}/viewed`);
+        await markProductAsViewed(id);
         viewedOnce.current = true;
-        const recent = JSON.parse(localStorage.getItem('recentlyViewedProducts') || '[]');
+
+const recent = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || '[]');
         const updated = [id, ...recent.filter((pid: string) => pid !== id)].slice(0, 5);
         localStorage.setItem('recentlyViewedProducts', JSON.stringify(updated));
-        
+
         const toSend = updated.filter((pid) => pid !== id);
         if (toSend.length > 0) {
-          await api.post(`/products/update-viewed-together`, {
-            current: id,
-            recent: toSend,
-          });
+          await updateViewedTogether(id, toSend);
         }
 
         if (user) {
-          const res = await api.get(`/reviews/can-review/${id}`);
-          setCanReview(res.data.canReview);
+          const can = await canReviewProduct(id);
+          setCanReview(can);
         }
-        viewedOnce.current = true;
 
       } catch (err) {
         console.error("Veri çekme hatası:", err);
@@ -91,11 +100,14 @@ export default function ProductDetailPage() {
   const isWished = !!(product?._id && user?.wishlist?.includes(product._id));
 
   const toggleWishlist = async () => {
-    if (!user || !product) return alert('Favorilere eklemek için giriş yapmalısınız');
+    if (!user || !product) return alert(ALERTS.LOGIN_REQUIRED);
     try {
       setLoading(true);
-      const res = await api.post(`/users/${user._id}/wishlist/${product._id}`);
-      updateUser({ wishlist: res.data.wishlist });
+      const res = await fetch(`/api/users/${user._id}/wishlist/${product._id}`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      updateUser({ wishlist: data.wishlist });
     } catch (err) {
       console.error('Favori işlemi başarısız:', err);
     } finally {
@@ -103,21 +115,21 @@ export default function ProductDetailPage() {
     }
   };
 
-  const submitReview = async () => {
-    if (!comment || rating === 0 || !product?._id) return alert("Lütfen puan ve yorum girin.");
-    try {
-      setSubmittingReview(true);
-      await api.post(`/reviews/${product._id}`, { comment, rating });
-      setComment('');
-      setRating(0);
-      await fetchProduct();
-      setHasReviewed(true);
-    } catch (err) {
-      console.error("Yorum gönderilemedi:", err);
-    } finally {
-      setSubmittingReview(false);
-    }
-  };
+const handleSubmitReview = async () => {
+  if (!comment || rating === 0 || !product?._id) return alert(ALERTS.REVIEW);
+  try {
+    setSubmittingReview(true);
+    await submitReview(product._id, { comment, rating });
+    setComment('');
+    setRating(0);
+    await fetchProduct();
+    setHasReviewed(true);
+  } catch (err) {
+    console.error("Yorum gönderilemedi:", err);
+  } finally {
+    setSubmittingReview(false);
+  }
+};
 
   const handleAdd = async () => {
     if (!product) return;
@@ -127,25 +139,25 @@ export default function ProductDetailPage() {
         name: product.name,
         price: product.price,
         qty: quantity,
-        image: product.images?.[0] || '/placeholder.jpg',
+        image: product.images?.[0] || PLACEHOLDER_IMAGE,
       });
-      alert('Ürün sepete eklendi!');
+      alert(ALERTS.ADDED_TO_CART);
     } catch (err) {
       console.error('Sepete ekleme hatası:', err);
     }
   };
 
   if (!product) return <p className="p-4">Yükleniyor...</p>;
-    const mainImage = product.images?.[0] || '/placeholder.jpg';
+  const mainImage = product.images?.[0] || PLACEHOLDER_IMAGE;
   const avgRating = product.reviews.length
     ? (product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.reviews.length).toFixed(1)
     : null;
 
-return (
+  return (
     <main className="p-6 max-w-6xl mx-auto">
       <div className="grid md:grid-cols-2 gap-8 mb-10">
         <div className="relative w-full aspect-square border rounded overflow-hidden">
-          <Image src={`http://localhost:5000/uploads/${mainImage}`} alt={product.name} fill className="object-cover" />
+          <Image src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${mainImage}`} alt={product.name} fill className="object-cover" />
           <button
             onClick={toggleWishlist}
             className="absolute top-2 right-2 text-red-500 hover:scale-110 transition z-10"
@@ -170,37 +182,6 @@ return (
             )}
           </div>
 
-          {product.tags.length > 0 && (
-            <div className="mb-2">
-              <strong>Etiketler:</strong>{' '}
-              {product.tags.map((tag, i) => (
-                <span key={i} className="inline-block bg-gray-200 rounded px-2 py-0.5 mr-1">{tag}</span>
-              ))}
-            </div>
-          )}
-
-          {product.variants?.length > 0 && (
-            <div className="text-sm mb-3">
-              <strong>Varyantlar:</strong>{' '}
-              {product.variants.map((v, i) => (
-                <span key={i} className="inline-block bg-gray-100 rounded px-2 py-0.5 mr-1">
-                  {v.size || ''} {v.color || ''}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {product.specs && Object.keys(product.specs).length > 0 && (
-            <div className="text-sm mb-3">
-              <strong>Teknik Özellikler:</strong>
-              <ul className="list-disc ml-5">
-                {Object.entries(product.specs).map(([key, val]) => (
-                  <li key={key}>{key}: {val}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
           <div className="mt-4 flex items-center gap-2">
             <input
               type="number"
@@ -219,6 +200,7 @@ return (
         </div>
       </div>
 
+      {/* Yorumlar */}
       <section className="mb-10">
         <h2 className="text-2xl font-bold mb-4">Yorumlar</h2>
 
@@ -245,7 +227,7 @@ return (
                 className="w-full border p-2 rounded mb-2"
               />
               <button
-                onClick={submitReview}
+                onClick={handleSubmitReview}
                 className="bg-blue-600 text-white px-4 py-2 rounded"
                 disabled={submittingReview}
               >
@@ -267,7 +249,7 @@ return (
                   <p className="font-semibold">{r.user?.firstName + " " + r.user?.lastName || 'Anonim'}</p>
                   <div className="flex gap-1">
                     {[...Array(r.rating)].map((_, i) => (
-                      <Star key={i} size={16} className="text-yellow-500" color='#facc15' fill='#facc15'/>
+                      <Star key={i} size={16} className="text-yellow-500" color='#facc15' fill='#facc15' />
                     ))}
                   </div>
                 </div>
@@ -289,30 +271,30 @@ return (
         </div>
       </section>
 
-{viewedTogether.length > 0 && (
-  <section className="mt-12">
-    <h2 className="text-2xl font-bold mb-2">Önerilen Ürünler</h2>
-    <p className="text-sm text-gray-500 mb-4">Bu ürünü görüntüleyen kullanıcılar şunlara da baktı</p>
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-      {viewedTogether.map((item) => (
-        <ProductCard key={item._id} {...(item as any)} />
-      ))}
-    </div>
-  </section>
-)}
+      {/* Görüntülenen ve benzer ürünler */}
+      {viewedTogether.length > 0 && (
+        <section className="mt-12">
+          <h2 className="text-2xl font-bold mb-2">Önerilen Ürünler</h2>
+          <p className="text-sm text-gray-500 mb-4">Bu ürünü görüntüleyen kullanıcılar şunlara da baktı</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {viewedTogether.map((item) => (
+              <ProductCard key={item._id} {...item} />
+            ))}
+          </div>
+        </section>
+      )}
 
-{related.length > 0 && (
-  <section className="mt-16">
-    <h2 className="text-2xl font-bold mb-4">Benzer Ürünler</h2>
-    <p className="text-sm text-gray-500 mb-4">Aynı kategorideki diğer ürünler</p>
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-      {related.map((item) => (
-        <ProductCard key={item._id} {...(item as any)} />
-      ))}
-    </div>
-  </section>
-)}
-
+      {related.length > 0 && (
+        <section className="mt-16">
+          <h2 className="text-2xl font-bold mb-4">Benzer Ürünler</h2>
+          <p className="text-sm text-gray-500 mb-4">Aynı kategorideki diğer ürünler</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {related.map((item) => (
+              <ProductCard key={item._id} {...item} />
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }

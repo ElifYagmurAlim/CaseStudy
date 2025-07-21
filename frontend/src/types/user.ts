@@ -6,5 +6,13 @@ export interface User {
   lastName?: string;
   role: string;
     phone?: string;
-  addresses?: any[];
+  addresses?: Address[];
+    wishlist?: string[];
+
+}
+
+interface Address {
+  street: string;
+  city: string;
+  postalCode: string;
 }

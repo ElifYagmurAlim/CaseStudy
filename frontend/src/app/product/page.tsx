@@ -1,63 +1,49 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import api from '@/lib/axios';
 import ProductCard from '@/components/ProductCard';
 import { Product } from '@/types/product';
+import { Category } from '@/types/category';
+import { getProducts } from '@/api/productService';
+import { getCategories } from '@/api/categoryService';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<{ _id: string; name: string }[]>([]);
-
-  const [search, setSearch] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [sortBy, setSortBy] = useState('newest');
+  const [search, setSearch] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
-  const [onlyInStock, setOnlyInStock] = useState(false);
-  const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
-  const [selectedSpecs, setSelectedSpecs] = useState<{ [key: string]: string }>({});
-
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    const categoryFromUrl = searchParams.get('category');
-    if (categoryFromUrl) {
-      setSelectedCategory(categoryFromUrl);
-    }
-  }, []);
+  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedSpecs, setSelectedSpecs] = useState<Record<string, string>>({});
+  const [onlyInStock, setOnlyInStock] = useState(false);
+  const [sortBy, setSortBy] = useState<'priceLow' | 'priceHigh' | 'rating' | 'newest'>('newest');
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const catRes = await api.get('/categories');
-        setCategories(catRes.data);
+        const categoryData = await getCategories();
+        setCategories(categoryData);
 
-        let url = '/products';
-        if (selectedCategory) {
-          url += `?category=${selectedCategory}`;
-        }
-
-        const prodRes = await api.get(url);
-        setProducts(prodRes.data);
+        const productData = await getProducts(selectedCategory || undefined);
+        setProducts(productData);
       } catch (err) {
         console.error('Ürünler veya kategoriler alınamadı:', err);
       }
     };
+
     fetchData();
   }, [selectedCategory]);
-    console.log(selectedCategory);
 
   const filteredProducts = products
-    .filter(p => {
+    .filter((p) => {
       if (onlyInStock && p.stock <= 0) return false;
       if (minPrice && p.price < Number(minPrice)) return false;
       if (maxPrice && p.price > Number(maxPrice)) return false;
       if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
-      if (selectedSize && !p.variants.some(v => v.size === selectedSize)) return false;
-      if (selectedColor && !p.variants.some(v => v.color === selectedColor)) return false;
+      if (selectedSize && !p.variants.some((v) => v.size === selectedSize)) return false;
+      if (selectedColor && !p.variants.some((v) => v.color === selectedColor)) return false;
 
       for (const [key, val] of Object.entries(selectedSpecs)) {
         if (val && p.specs?.[key]?.toLowerCase() !== val.toLowerCase()) {
@@ -71,7 +57,9 @@ export default function ProductsPage() {
       if (sortBy === 'priceLow') return a.price - b.price;
       if (sortBy === 'priceHigh') return b.price - a.price;
       if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
-      if (sortBy === 'newest') return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      if (sortBy === 'newest') {
+        return new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime();
+      }
       return 0;
     });
 
@@ -79,7 +67,7 @@ export default function ProductsPage() {
     <div className="p-6 max-w-7xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Tüm Ürünler</h1>
 
-      {/* 🔍 Arama ve Filtreler */}
+      {/* 🔍 Filtre Paneli */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <input
           type="text"
@@ -89,10 +77,16 @@ export default function ProductsPage() {
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="border p-2 rounded">
+        <select
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+          className="border p-2 rounded"
+        >
           <option value="">Tüm Kategoriler</option>
-          {categories.map(c => (
-            <option key={c._id} value={c._id}>{c.name}</option>
+          {categories.map((c) => (
+            <option key={c._id} value={c._id}>
+              {c.name}
+            </option>
           ))}
         </select>
 
@@ -116,7 +110,7 @@ export default function ProductsPage() {
         <select
           className="border p-2 rounded"
           value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
+          onChange={(e) => setSortBy(e.target.value as any)}
         >
           <option value="newest">En Yeni</option>
           <option value="priceLow">Fiyat: Artan</option>
@@ -130,7 +124,7 @@ export default function ProductsPage() {
           <input
             type="checkbox"
             checked={onlyInStock}
-            onChange={() => setOnlyInStock(prev => !prev)}
+            onChange={() => setOnlyInStock((prev) => !prev)}
           />
           Stokta Olanlar
         </label>
@@ -141,7 +135,6 @@ export default function ProductsPage() {
           value={selectedColor}
           onChange={(e) => setSelectedColor(e.target.value)}
         />
-
       </div>
 
       {/* 📦 Ürünler */}

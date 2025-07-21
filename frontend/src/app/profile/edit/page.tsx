@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/store/auth';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { updateUserProfile, updateUserPassword } from '@/api/userService';
+import { isAxiosError } from 'axios';
+import { ALERTS } from '@/constants/messages';
+
+
 export default function ProfileEditPage() {
   const { user, updateUser } = useAuth();
   const router = useRouter();
@@ -49,10 +53,10 @@ export default function ProfileEditPage() {
     try {
       const res = await updateUserProfile(user!._id, data);
       updateUser(res.data);
-      alert('Profil güncellendi');
+      alert(ALERTS.PROFILE_CREATED);
     } catch (err) {
       console.error('Güncelleme hatası:', err);
-      alert('Bir hata oluştu');
+      alert(ALERTS.SOMETHING_WENT_WRONG);
     }
   };
 
@@ -64,9 +68,14 @@ export default function ProfileEditPage() {
     try {
       await updateUserPassword(user!._id, currentPassword, newPassword);
       setPasswordMessage('Şifre başarıyla güncellendi.');
-    } catch (err: any) {
-      setPasswordMessage('Hata: ' + (err.response?.data?.message || 'Şifre güncellenemedi.'));
-    }
+    } catch (err: unknown) {
+          if (isAxiosError(err)) {
+            const message = err.response?.data?.message;
+              setPasswordMessage(message || 'Şifre güncellenemedi.');
+          } else {
+            setPasswordMessage('Bilinmeyen bir hata oluştu.');
+          }
+        }
   };
 
   if (!user) return <p className="p-6 text-center">Yükleniyor...</p>;

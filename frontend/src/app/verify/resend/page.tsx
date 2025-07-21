@@ -1,55 +1,57 @@
-"use client";
-// src/pages/ResendVerification.tsx
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { resendVerification } from '@/api/authService';
+'use client';
+
 import { useState } from 'react';
+import { resendVerificationEmail } from '@/api/authService';
+import { isAxiosError } from 'axios';
 
-const schema = z.object({
-  email: z.string().email('Geçerli bir e-posta girin'),
-});
+export default function ResendVerifyPage() {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [message, setMessage] = useState('');
 
-type FormData = z.infer<typeof schema>;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus('sending');
 
-const ResendVerification = () => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<FormData>({
-    resolver: zodResolver(schema),
-  });
-
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const onSubmit = async (data: FormData) => {
     try {
-      const response = await resendVerification(data.email);
-      setMessage(response.message);
-      setError(null);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Bir hata oluştu.');
-      setMessage(null);
-    }
+      const msg = await resendVerificationEmail(email);
+      setStatus('success');
+      setMessage(msg || 'Doğrulama e-postası gönderildi.');
+    } catch (err: unknown) {
+              if (isAxiosError(err)) {
+                const message = err.response?.data?.message;
+                  setMessage(message || 'Bir hata oluştu.');
+setStatus('error');
+                } else {
+                setMessage('Bilinmeyen bir hata oluştu.');
+setStatus('error');
+              }
+            }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <h2>Doğrulama Maili Gönder</h2>
+    <div className="p-6 max-w-md mx-auto">
+      <h1 className="text-xl font-bold mb-4">E-posta Doğrulama Yeniden Gönder</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="E-posta adresiniz"
+          required
+          className="w-full border p-2 rounded"
+        />
+        <button
+          type="submit"
+          disabled={status === 'sending'}
+          className="bg-blue-600 text-white px-4 py-2 rounded w-full"
+        >
+          Gönder
+        </button>
+      </form>
 
-      <input type="email" placeholder="E-posta adresiniz" {...register('email')} />
-      {errors.email && <p>{errors.email.message}</p>}
-
-      {message && <p style={{ color: 'green' }}>{message}</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      <button type="submit" disabled={isSubmitting}>
-        Gönder
-      </button>
-    </form>
+      {status === 'success' && <p className="text-green-600 mt-4">{message}</p>}
+      {status === 'error' && <p className="text-red-600 mt-4">{message}</p>}
+    </div>
   );
-};
-
-export default ResendVerification;
+}

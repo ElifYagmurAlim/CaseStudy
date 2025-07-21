@@ -2,7 +2,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import api from '@/lib/axios';
 import ProductCard from '@/components/ProductCard';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -154,7 +153,8 @@ export default function HomePage() {
               <div className="border p-4 rounded text-center hover:shadow transition">
                 <div className="w-24 h-24 relative mx-auto mb-2">
                   <Image
-                    src={`${process.env.NEXT_PUBLIC_IMAGE_BASE_URL}/${cat.image}`}                    alt={cat.name}
+                    src={`${process.env.NEXT_PUBLIC_IMAGE_BASE_URL}/${cat.image}`}                    
+                    alt={cat.name}
                     fill
                     className="object-cover rounded"
                   />

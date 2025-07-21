@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { fetchUsers, deleteUser } from '@/api/userService';
 import { User } from '@/types/user';
+import { ALERTS } from '@/constants/messages';
 
 export default function AdminCustomersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -24,7 +25,7 @@ export default function AdminCustomersPage() {
       await deleteUser(id);
       setUsers(users.filter(u => u._id !== id));
     } catch (err) {
-      alert('Kullanıcı silinemedi.');
+      alert(ALERTS.SOMETHING_WENT_WRONG);
     }
   };
 

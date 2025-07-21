@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerUser } from '@/api/authService';
 import { useState } from 'react';
+import { isAxiosError } from 'axios';
 
 const schema = z.object({
   email: z.string().email('Geçerli bir e-posta girin'),
@@ -32,11 +33,18 @@ const Register = () => {
       setSuccessMessage('Kayıt başarılı! Lütfen e-postanızı kontrol edin.');
       setServerError(null);
       reset();
-    } catch (err: any) {
-      console.error(err);
-      setServerError(err.response?.data?.message || 'Kayıt başarısız');
-      setSuccessMessage(null);
-    }
+    } catch (err: unknown) {
+              if (isAxiosError(err)) {
+                const message = err.response?.data?.message;
+                  setServerError(message || 'Kayıt başarısız');
+                        setSuccessMessage(null);
+
+                } else {
+                setServerError('Bilinmeyen bir hata oluştu.');
+                    setSuccessMessage(null);
+
+              }
+            }
   };
 
   return (

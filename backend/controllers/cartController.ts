@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import User from '../models/user';
+import User, {IUser} from '../models/user';
 import Product from '../models/product';
 
 // GET /cart → Kullanıcının sepetini getir
@@ -16,9 +16,10 @@ export const getCart = async (req: Request, res: Response) => {
 export const addToCart = async (req: Request, res: Response) => {
   const { productId, quantity } = req.body;
 
+  
   try {
-    const user = await User.findById(req.user.id);
-    const existingItem = user.cart.find((item: any) =>
+    const user = await User.findById(req.user.id) as IUser;
+    const existingItem = user.cart.find((item: typeof user.cart[0]) =>
       item.product.equals(productId)
     );
 
@@ -41,8 +42,8 @@ export const updateCart = async (req: Request, res: Response) => {
   const { productId, quantity } = req.body;
 
   try {
-    const user = await User.findById(req.user.id);
-    const item = user.cart.find((item: any) =>
+    const user = await User.findById(req.user.id) as IUser;
+    const item = user.cart.find((item: typeof user.cart[0]) =>
       item.product.equals(productId)
     );
 
