@@ -82,6 +82,7 @@ async function seed() {
   });
     // Kategori ekle
     const category = await Category.create({
+      id: '687cf8592d6c9472d9ef6fca',
     name: 'Food',
     description: 'Foods',
     image: '1753020505447-images.jpg',

@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import api from '@/lib/axios';
 import ProductCard from '@/components/ProductCard';
-import { Product } from '@/types/types';
+import { Product } from '@/types/product';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -46,9 +46,9 @@ export default function ProductsPage() {
         console.error('Ürünler veya kategoriler alınamadı:', err);
       }
     };
-
     fetchData();
   }, [selectedCategory]);
+    console.log(selectedCategory);
 
   const filteredProducts = products
     .filter(p => {

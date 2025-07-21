@@ -2,24 +2,17 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import api from '@/lib/axios';
+import { getProductById, updateProduct, bulkUpdateProductStatus  } from '@/api/productService';
+import { getCategories } from '@/api/categoryService';
+import { Category } from '@/types/category';
+import { Variant } from '@/types/product';
 
-interface Category {
-  _id: string;
-  name: string;
-}
-
-interface Variant {
-  size?: string;
-  color?: string;
-}
-
-interface Product {
+interface ProductForm {
   name: string;
   description: string;
   price: number;
   stock: number;
-  category: string;
+  category: string; // sadece _id
   featured: boolean;
   tags: string[];
   specs: Record<string, string>;
@@ -31,7 +24,7 @@ export default function EditProductPage() {
   const { id } = useParams();
   const router = useRouter();
 
-  const [form, setForm] = useState<Product>({
+  const [form, setForm] = useState<ProductForm>({
     name: '',
     description: '',
     price: 0,
@@ -53,25 +46,24 @@ export default function EditProductPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [productRes, categoryRes] = await Promise.all([
-          api.get(`/products/${id}`),
-          api.get(`/categories`)
+        const [product, categoryList] = await Promise.all([
+          getProductById(id as string),
+          getCategories(),
         ]);
 
-        const p = productRes.data;
-        setCategories(categoryRes.data);
+        setCategories(categoryList);
 
         setForm({
-          name: p.name || '',
-          description: p.description || '',
-          price: p.price || 0,
-          stock: p.stock || 0,
-          category: typeof p.category === 'string' ? p.category : p.category?._id || '',
-          featured: p.featured || false,
-          tags: Array.isArray(p.tags) ? p.tags : [],
-          specs: p.specs || {},
-          variants: p.variants || [],
-          images: p.images || [],
+          name: product.name || '',
+          description: product.description || '',
+          price: product.price || 0,
+          stock: product.stock || 0,
+          category: typeof product.category === 'string' ? product.category : product.category?._id || '',
+          featured: product.featured || false,
+          tags: Array.isArray(product.tags) ? product.tags : [],
+          specs: product.specs || {},
+          variants: product.variants || [],
+          images: product.images || [],
         });
       } catch (err) {
         console.error('Veri alınırken hata:', err);
@@ -80,7 +72,6 @@ export default function EditProductPage() {
 
     fetchData();
   }, [id]);
-
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -117,10 +108,12 @@ export default function EditProductPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      await api.patch(`/products/${id}`, {
+      const selectedCategory = categories.find(cat => cat._id === form.category);
+
+      await updateProduct(id as string, {
         ...form,
+        category: selectedCategory ?? { _id: form.category, name: '' }, // fallback eklendi
         tags: form.tags.map((t) => t.trim()),
       });
 
@@ -131,56 +124,25 @@ export default function EditProductPage() {
       setLoading(false);
     }
   };
+console.log(form);
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded shadow">
       <h1 className="text-2xl font-bold mb-6">Ürün Düzenle</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
-        <input
-          name="name"
-          placeholder="Ürün Adı"
-          value={form.name}
-          onChange={handleChange}
-          className="input"
-        />
+        <input name="name" placeholder="Ürün Adı" value={form.name} onChange={handleChange} className="input" />
 
-        <textarea
-          name="description"
-          placeholder="Açıklama"
-          value={form.description}
-          rows={3}
-          onChange={handleChange}
-          className="input"
-        />
+        <textarea name="description" placeholder="Açıklama" value={form.description} rows={3} onChange={handleChange} className="input" />
 
         <div className="grid grid-cols-2 gap-4">
-          <input
-            name="price"
-            type="number"
-            placeholder="Fiyat (₺)"
-            value={form.price}
-            onChange={handleChange}
-            className="input"
-          />
-          <input
-            name="stock"
-            type="number"
-            placeholder="Stok"
-            value={form.stock}
-            onChange={handleChange}
-            className="input"
-          />
+          <input name="price" type="number" placeholder="Fiyat (₺)" value={form.price} onChange={handleChange} className="input" />
+          <input name="stock" type="number" placeholder="Stok" value={form.stock} onChange={handleChange} className="input" />
         </div>
-
-        <select
-          name="category"
-          value={form.category}
-          onChange={handleChange}
-          className="input"
-        >
+       
+        <select name="category" value={form.category} onChange={handleChange} className="input">
           <option value="">Kategori Seç</option>
           {categories.map((cat) => (
-            <option key={cat._id} value={cat._id}>
+            <option key={cat._id} value={String(cat._id)}>
               {cat.name}
             </option>
           ))}
@@ -193,22 +155,14 @@ export default function EditProductPage() {
           onChange={(e) =>
             setForm((prev) => ({
               ...prev,
-              tags: e.target.value
-                .split(',')
-                .map((t) => t.trim())
-                .filter(Boolean),
+              tags: e.target.value.split(',').map((t) => t.trim()).filter(Boolean),
             }))
           }
           className="input"
         />
 
         <div className="flex gap-2 items-center">
-          <input
-            type="checkbox"
-            name="featured"
-            checked={form.featured}
-            onChange={handleChange}
-          />
+          <input type="checkbox" name="featured" checked={form.featured} onChange={handleChange} />
           <label>Öne Çıkan</label>
         </div>
 
@@ -216,21 +170,9 @@ export default function EditProductPage() {
         <div>
           <label>Teknik Özellikler</label>
           <div className="flex gap-2 mb-2">
-            <input
-              placeholder="Anahtar"
-              value={specKey}
-              onChange={(e) => setSpecKey(e.target.value)}
-              className="input"
-            />
-            <input
-              placeholder="Değer"
-              value={specValue}
-              onChange={(e) => setSpecValue(e.target.value)}
-              className="input"
-            />
-            <button type="button" className="btn" onClick={handleSpecAdd}>
-              Ekle
-            </button>
+            <input placeholder="Anahtar" value={specKey} onChange={(e) => setSpecKey(e.target.value)} className="input" />
+            <input placeholder="Değer" value={specValue} onChange={(e) => setSpecValue(e.target.value)} className="input" />
+            <button type="button" className="btn" onClick={handleSpecAdd}>Ekle</button>
           </div>
           <ul className="text-sm text-gray-600">
             {Object.entries(form.specs).map(([key, val]) => (
@@ -243,21 +185,9 @@ export default function EditProductPage() {
         <div>
           <label>Varyantlar</label>
           <div className="flex gap-2 mb-2">
-            <input
-              placeholder="Beden"
-              value={variant.size || ''}
-              onChange={(e) => setVariant((v) => ({ ...v, size: e.target.value }))}
-              className="input"
-            />
-            <input
-              placeholder="Renk"
-              value={variant.color || ''}
-              onChange={(e) => setVariant((v) => ({ ...v, color: e.target.value }))}
-              className="input"
-            />
-            <button type="button" className="btn" onClick={handleVariantAdd}>
-              Ekle
-            </button>
+            <input placeholder="Beden" value={variant.size || ''} onChange={(e) => setVariant((v) => ({ ...v, size: e.target.value }))} className="input" />
+            <input placeholder="Renk" value={variant.color || ''} onChange={(e) => setVariant((v) => ({ ...v, color: e.target.value }))} className="input" />
+            <button type="button" className="btn" onClick={handleVariantAdd}>Ekle</button>
           </div>
           <ul className="text-sm text-gray-600">
             {form.variants.map((v, i) => (

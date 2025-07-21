@@ -3,16 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/store/auth';
 import { useRouter } from 'next/navigation';
-import api from '@/lib/axios';
+import { getAllProducts, deleteProduct, bulkUpdateProductStatus } from '@/api/productService';
+import { Product } from '@/types/product';
 
-interface Product {
-  _id: string;
-  name: string;
-  price: number;
-  active: boolean;
-  category?: { name: string };
-  featured: boolean;
-}
 
 export default function AdminProductsPage() {
   const { user } = useAuth();
@@ -37,8 +30,8 @@ export default function AdminProductsPage() {
 
   const fetchProducts = async () => {
     try {
-      const res = await api.get('/products');
-      setProducts(res.data);
+      const res = await getAllProducts();
+      setProducts(res);
     } catch (err) {
       console.error('Ürünler alınamadı:', err);
     } finally {
@@ -49,7 +42,7 @@ export default function AdminProductsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return;
     try {
-      await api.delete(`/products/${id}`);
+      await deleteProduct(id);
       setProducts((prev) => prev.filter((p) => p._id !== id));
     } catch (err) {
       console.error('Silme hatası:', err);
@@ -64,10 +57,7 @@ export default function AdminProductsPage() {
 
   const updateStatus = async (status: boolean) => {
     try {
-      await api.patch('/products/bulk-status', {
-        ids: selectedIds,
-        status,
-      });
+      await bulkUpdateProductStatus(selectedIds, status);
       fetchProducts();
       setSelectedIds([]);
     } catch (err) {

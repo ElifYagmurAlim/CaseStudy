@@ -10,40 +10,7 @@ import { BsHeartFill } from 'react-icons/bs';
 import { Heart, Star } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
 import { useRef } from 'react';
-
-interface Variant {
-  size?: string;
-  color?: string;
-}
-
-interface Review {
-  comment: string;
-  rating: number;
-  user: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-  };
-}
-
-interface Product {
-  _id: string;
-  name: string;
-  description: string;
-  price: number;
-  stock: number;
-  images: string[];
-  category: { _id: string; name: string };
-  specs: Record<string, string>;
-  tags: string[];
-  featured: boolean;
-  variants: Variant[];
-  sold: number;
-  views: number;
-  reviews: Review[];
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { Product, Variant, Review } from '@/types/product';
 
 export default function ProductDetailPage() {
   const { id } = useParams();

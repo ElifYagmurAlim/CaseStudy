@@ -26,10 +26,26 @@ export interface Product {
     user: {
       _id: string;
       name: string;
-    } | string;
+    };
     rating: number;
     comment: string;
     approved?: boolean;
   }[];
   updatedAt?: string;
+  active: boolean;
+}
+
+export interface Variant {
+  size?: string;
+  color?: string;
+}
+
+export interface Review {
+  comment: string;
+  rating: number;
+  user: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+  };
 }
