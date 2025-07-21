@@ -4,6 +4,7 @@ import ViewedTogether from '../models/viewedTogether';
 import mongoose , { Types } from 'mongoose';
 import Order from '../models/order'; 
 import Review from '../models/review';
+import { toBoolean } from '../utils/parse';
 
 // Tüm ürünleri getir
 export const getAllProducts = async (req: Request, res: Response) => {
@@ -101,7 +102,7 @@ export const createProduct = async (req: Request, res: Response) => {
       category,
       stock,
       tags: parsedTags,
-      featured: featured === 'true' || featured === true,
+      featured: toBoolean(featured),
       specs: parsedSpecs,
       variants: parsedVariants,
       images,

@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema, Model } from 'mongoose';
+import { OrderStatus, OrderStatusType } from '../constants/orderStatus';
 
 export interface IOrder extends Document {
   user?: mongoose.Types.ObjectId; // Misafir siparişleri için optional
@@ -16,7 +17,7 @@ export interface IOrder extends Document {
     postalCode: string;
     phone: string;
   };
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+  status: OrderStatusType;
   createdAt: Date;
   updatedAt: Date;
 
@@ -41,7 +42,10 @@ const orderSchema = new Schema<IOrder>(
       postalCode: String,
       phone: String
     },
-    status: { type: String, enum: ['pending', 'confirmed', 'shipped', 'delivered'], default: 'pending' },
+    status: { 
+      type: String, 
+      enum: Object.values(OrderStatus),
+      default: OrderStatus.PENDING },
   },
   { timestamps: true }
 );

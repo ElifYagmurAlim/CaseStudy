@@ -4,8 +4,6 @@ import Order from '../models/order';
 
 export const getReviewsForProduct = async (req: Request, res: Response) => {
   try {
-      console.log(req.user?._id);
-
     const reviews = await Review.find({ product: req.params.productId }).populate('user', 'firstName lastName');
     res.json(reviews);
   } catch (err) {
@@ -13,7 +11,7 @@ export const getReviewsForProduct = async (req: Request, res: Response) => {
   }
 };
 
-export const createReview = async (req: any, res: Response) => {
+export const createReview = async (req: Request, res: Response) => {
   try {
     const { productId } = req.params;
     const { rating, comment } = req.body;

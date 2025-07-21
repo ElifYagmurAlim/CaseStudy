@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/axios';
 import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import Link from 'next/link';
+import { DashboardData } from '@/types/dashboard';
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042'];
 
@@ -15,9 +16,10 @@ const statusMap: Record<string, string> = {
 };
 
 export default function AdminDashboard() {
-  const [data, setData] = useState<any>(null);
+const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('month'); // 'week', 'month', 'year'
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,6 +37,7 @@ export default function AdminDashboard() {
   }, [timeRange]);
 
   if (loading) return <p className="p-6">Yükleniyor...</p>;
+  if (!data) return <p>Yükleniyor...</p>;
 
   return (
     <div className="p-6 max-w-6xl mx-auto">

@@ -31,11 +31,25 @@ async function seed() {
 
     // Kullanıcı ekle
     const admin = await User.create({
-    email: 'elifalim1506@gmail.com',
+    email: 'admin@admin.com',
     password: '$2b$10$u9zMqSDe/X3FoNWqlLxgfe07WjqviL9AsT2UTuESCnEvI4WVPIVo2',
     role: 'admin',
-    firstName: 'Elif',
+    firstName: 'Admin',
     lastName: 'Alim',
+    wishlist: [],
+    favorites: [],
+    isVerified: true,
+    recentViews: [],
+    emailVerified: false,
+    addresses: [],
+    __v: 0
+  });
+      const customer = await User.create({
+    email: 'customer@gmail.com',
+    password: '$2b$10$u9zMqSDe/X3FoNWqlLxgfe07WjqviL9AsT2UTuESCnEvI4WVPIVo2', //asd123
+    role: 'customer',
+    firstName: 'customer',
+    lastName: 'customer',
     wishlist: [],
     favorites: [],
     isVerified: true,

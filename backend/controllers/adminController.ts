@@ -2,21 +2,22 @@ import { Request, Response } from 'express';
 import Order from '../models/order';
 import User from '../models/user';
 import Product from '../models/product';
+import { DateFilters } from '../constants/dateFilters';
 
 export const getDashboard = async (req: Request, res: Response) => {
   try {
-    const range = req.query.range || 'month'; // "week", "month", "year"
+    const range = req.query.range || DateFilters.MONTH; // "week", "month", "year"
     const now = new Date();
     let startDate = new Date();
 
     switch (range) {
-      case 'week':
+      case DateFilters.WEEK:
         startDate.setDate(now.getDate() - 7);
         break;
-      case 'month':
+      case DateFilters.MONTH:
         startDate.setMonth(now.getMonth() - 1);
         break;
-      case 'year':
+      case DateFilters.YEAR:
         startDate.setFullYear(now.getFullYear() - 1);
         break;
     }
@@ -41,7 +42,7 @@ export const getDashboard = async (req: Request, res: Response) => {
         $group: {
           _id: {
             $dateToString: {
-              format: range === 'year' ? "%Y-%m" : "%Y-%m-%d",
+              format: range === DateFilters.YEAR ? "%Y-%m" : "%Y-%m-%d",
               date: "$createdAt"
             }
           },

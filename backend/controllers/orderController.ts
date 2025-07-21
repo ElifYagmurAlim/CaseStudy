@@ -45,7 +45,6 @@ export const getOrderById = async (req: Request, res: Response) => {
   if (order.user && req.user && order.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Yetkisiz erişim' });
     }
-    console.log(order);
 
     res.json(order);
   } catch (err) {

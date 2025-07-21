@@ -1,52 +1,64 @@
-'use client';
+"use client";
 
 import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import axios from '@/lib/axios';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/store/auth';
+import { loginUser } from '@/api/authService';
 import { useState } from 'react';
+import { isAxiosError } from 'axios';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/store/auth'; // ← kendi context hook'un
+import axios from '@/lib/axios';
 
 const schema = z.object({
-  email: z.string().email('Geçerli bir email girin'),
+  email: z.string().email('Geçerli bir e-posta girin'),
   password: z.string().min(6, 'Şifre en az 6 karakter olmalı'),
 });
 
 type FormData = z.infer<typeof schema>;
 
-export default function LoginPage() {
-  const router = useRouter();
-  const { login } = useAuth();
-  const [serverError, setServerError] = useState('');
-  const [emailForResend, setEmailForResend] = useState('');
-
+const Login = () => {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
+
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [emailForResend, setEmailForResend] = useState<string | null>(null);
+  const router = useRouter();
+  const { login } = useAuth(); // custom auth store'un (token vs için)
 
   const onSubmit = async (data: FormData) => {
     try {
-      const res = await axios.post('/auth/login', data);
-      login(res.data, res.data.token);
-      if (res.data.role === 'admin') {
+      const res = await loginUser(data);
+
+      login(res, res.token); // kullanıcıyı kaydet, token'ı al
+      if (res.role === 'admin') {
         router.push('/admin');
       } else {
         router.push('/');
       }
-    } catch (err: any) {
-      const msg = err.response?.data?.message || 'Giriş sırasında hata oluştu.';
-      setServerError(msg);
 
-      if (msg.includes('doğrulanmamış')) {
-        setEmailForResend(data.email); // yeniden gönderimde kullanmak için
+    } catch (err: unknown) {
+      if (isAxiosError(err)) {
+        const message = err.response?.data?.message;
+
+        if (message === 'Email not verified') {
+          setServerError('E-posta adresiniz henüz doğrulanmamış.');
+          setEmailForResend(data.email);
+        } else {
+          setServerError(message || 'Giriş başarısız');
+        }
+      } else {
+        console.error(err);
+        setServerError('Bilinmeyen bir hata oluştu.');
       }
     }
   };
 
   const handleResend = async () => {
+    if (!emailForResend) return;
     try {
       await axios.post('/auth/resend-verification', { email: emailForResend });
       alert('Doğrulama e-postası yeniden gönderildi.');
@@ -56,29 +68,20 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 shadow rounded bg-white">
-      <h1 className="text-2xl font-bold mb-4">Giriş Yap</h1>
+    <div className="max-w-md mx-auto mt-10 p-6 border rounded-xl shadow-md bg-white">
+      <h2 className="text-2xl font-bold mb-4">Giriş Yap</h2>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <input
-          placeholder="Email"
-          {...register('email')}
-          className="border p-2 w-full"
-        />
-        {errors.email && <p className="text-red-500">{errors.email.message}</p>}
+        <input className="w-full p-2 border rounded" type="email" placeholder="E-posta" {...register('email')} />
+        {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
 
-        <input
-          type="password"
-          placeholder="Şifre"
-          {...register('password')}
-          className="border p-2 w-full"
-        />
-        {errors.password && <p className="text-red-500">{errors.password.message}</p>}
+        <input className="w-full p-2 border rounded" type="password" placeholder="Şifre" {...register('password')} />
+        {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
 
         {serverError && (
-          <div className="text-red-600 text-sm">
+          <div className="text-sm text-red-500">
             <p>{serverError}</p>
 
-            {serverError.includes('doğrulanmamış') && (
+            {serverError.includes('doğrulanmamış') && emailForResend && (
               <button
                 type="button"
                 onClick={handleResend}
@@ -90,10 +93,12 @@ export default function LoginPage() {
           </div>
         )}
 
-        <button type="submit" className="bg-blue-500 text-white p-2 w-full rounded">
+        <button type="submit" disabled={isSubmitting} className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
           Giriş Yap
         </button>
       </form>
     </div>
   );
-}
+};
+
+export default Login;

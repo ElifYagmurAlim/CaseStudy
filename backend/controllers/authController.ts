@@ -4,6 +4,7 @@ import User from '../models/user';
 import { generateToken } from '../utils/generateToken';
 import crypto from 'crypto';
 import sendEmail from '../utils/sendEmail';
+import { Roles } from '../constants/roles';
 
 export const registerUser = async (req: Request, res: Response) => {
 try {
@@ -47,7 +48,7 @@ export const loginUser = async (req: Request, res: Response) => {
     if (!user)
       return res.status(400).json({ message: 'Invalid credentials' });
     
-    if (!user.isVerified && user.role === 'customer') {
+    if (!user.isVerified && user.role === Roles.CUSTOMER) {
       return res.status(403).json({ message: 'E-posta adresiniz henüz doğrulanmamış. Lütfen e-postanızı kontrol edin.' });
     }
 

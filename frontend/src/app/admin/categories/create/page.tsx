@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import api from '@/lib/axios';
 
 export default function CreateCategoryPage() {
   const router = useRouter();
@@ -42,7 +42,7 @@ export default function CreateCategoryPage() {
     formData.append('image', file);
 
     try {
-      await axios.post('http://localhost:5000/api/categories', formData, {
+      await api.post('/categories', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

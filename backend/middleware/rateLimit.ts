@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit';
 
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 dakika
-  max: 5, // Bu sürede max 5 istek
+  max: 30, // Bu sürede max 5 istek
   message: {
     message: 'Çok fazla giriş denemesi yapıldı. Lütfen 15 dakika sonra tekrar deneyin.',
   },

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Category from '../models/category';
+import { toBoolean } from '../utils/parse';
 
 // @desc    Tüm kategorileri getir
 export const getAllCategories = async (_req: Request, res: Response) => {
@@ -26,7 +27,7 @@ export const createCategory = async (req: Request, res: Response) => {
       name,
       description,
       image, // sadece dosya adı kaydolacak
-      isActive: isActive === 'true',
+      isActive: toBoolean(isActive),
     });
 
     res.status(201).json(category);
