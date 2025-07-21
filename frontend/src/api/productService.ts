@@ -4,10 +4,12 @@ import { Product } from '@/types/product';
 export interface CreateProductPayload extends Omit<Product, '_id'> {}
 export interface UpdateProductPayload extends Partial<CreateProductPayload> {}
 
-export const getAllProducts = async (): Promise<Product[]> => {
-  const response = await api.get('/products');
-  return response.data;
+export const getProducts = async (categoryId?: string): Promise<Product[]> => {
+  const url = categoryId ? `/products?category=${categoryId}` : '/products';
+  const res = await api.get(url);
+  return res.data;
 };
+
 
 export const getProductById = async (id: string): Promise<Product> => {
   const res = await api.get(`/products/${id}`);
@@ -47,14 +49,13 @@ export const getViewedTogether = async (id: string): Promise<Product[]> => {
   return res.data;
 };
 
-
-export const trackProductView = async (id: string): Promise<void> => {
-  await api.post(`/products/${id}/viewed`);
+export const markProductAsViewed = async (id: string) => {
+  return await api.post(`/products/${id}/viewed`);
 };
 
-export const updateViewedTogether = async (data: {
-  current: string;
-  recent: string[];
-}): Promise<void> => {
-  await api.post(`/products/update-viewed-together`, data);
+export const updateViewedTogether = async (current: string, recent: string[]) => {
+  return await api.post(`/products/update-viewed-together`, {
+    current,
+    recent,
+  });
 };

@@ -1,38 +1,40 @@
-"use client";
-// src/pages/Verify.tsx
+'use client';
+
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // veya useRouter (Next.js kullanıyorsan)
-import axios from '@/lib/axios'; // interceptor'lu axios instance
+import { useRouter, useSearchParams } from 'next/navigation';
+import { verifyEmail } from '@/api/authService';
 
 const Verify = () => {
-  const { token } = useParams(); // Next.js için useRouter().query.token
-  const navigate = useNavigate();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token'); // Next.js'te token query paramından alınır
+
   const [status, setStatus] = useState<'pending' | 'success' | 'error'>('pending');
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const verifyEmail = async () => {
+    const verify = async () => {
       try {
-        const response = await axios.get(`/auth/verify/${token}`);
+        if (!token) throw new Error('Doğrulama tokenı bulunamadı.');
+        const msg = await verifyEmail(token);
         setStatus('success');
-        setMessage(response.data.message || 'E-posta doğrulandı. Giriş yapabilirsiniz.');
-        // otomatik yönlendirme:
-        setTimeout(() => navigate('/login'), 3000);
+        setMessage(msg);
+        setTimeout(() => router.push('/login'), 3000);
       } catch (err: any) {
         setStatus('error');
-        setMessage(err.response?.data?.message || 'Doğrulama başarısız.');
+        setMessage(err?.response?.data?.message || err.message || 'Doğrulama başarısız.');
       }
     };
 
-    if (token) verifyEmail();
-  }, [token, navigate]);
+    verify();
+  }, [token, router]);
 
   return (
-    <div>
-      <h2>E-posta Doğrulama</h2>
+    <div className="p-6 max-w-xl mx-auto text-center">
+      <h2 className="text-2xl font-bold mb-4">E-posta Doğrulama</h2>
       {status === 'pending' && <p>Doğrulama yapılıyor...</p>}
-      {status === 'success' && <p style={{ color: 'green' }}>{message}</p>}
-      {status === 'error' && <p style={{ color: 'red' }}>{message}</p>}
+      {status === 'success' && <p className="text-green-600">{message}</p>}
+      {status === 'error' && <p className="text-red-600">{message}</p>}
     </div>
   );
 };

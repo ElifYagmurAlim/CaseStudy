@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useCart } from '@/store/cart';
 import { useAuth } from '@/store/auth';
-import api from '@/lib/axios';
+import { createOrder } from '@/api/orderService';
 import { useRouter } from 'next/navigation';
 
 interface Address {
@@ -46,38 +46,38 @@ export default function CheckoutPage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async () => {
-    if (items.length === 0) return alert('Sepet boş');
+ const handleSubmit = async () => {
+  if (items.length === 0) return alert('Sepet boş');
 
-    const {  street, city, postalCode, } = form;
-    if ( !street || !city || !postalCode ) {
-      return alert('Lütfen tüm adres alanlarını doldurun');
-    }
+  const { street, city, postalCode } = form;
+  if (!street || !city || !postalCode) {
+    return alert('Lütfen tüm adres alanlarını doldurun');
+  }
 
-    const payload = {
-      user: user?._id || null,
-      items: items.map(item => ({
-        product: item.productId,
-        qty: item.qty,
-        price: item.price,
-      })),
-      shippingAddress: form,
-      paymentMethod,
-    };
+  const payload = {
+    user: user?._id || null,
+    items: items.map(item => ({
+      product: item.productId,
+      qty: item.qty,
+      price: item.price,
+    })),
+    shippingAddress: form,
+    paymentMethod,
+  };
 
     try {
-      setLoading(true);
-      await api.post('/orders', payload);
-      alert('Sipariş başarıyla oluşturuldu!');
-      clearCart();
-      router.push('/order-confirmation');
-    } catch (err) {
-      console.error('Sipariş oluşturulamadı:', err);
-      alert('Sipariş oluşturulamadı.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    setLoading(true);
+    await createOrder(payload);
+    alert('Sipariş başarıyla oluşturuldu!');
+    clearCart();
+    router.push('/order-confirmation');
+  } catch (err) {
+    console.error('Sipariş oluşturulamadı:', err);
+    alert('Sipariş oluşturulamadı.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="max-w-2xl mx-auto p-6">

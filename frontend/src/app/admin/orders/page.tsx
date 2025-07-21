@@ -1,21 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import api from '@/lib/axios';
 import { useAuth } from '@/store/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-
-interface Order {
-  _id: string;
-  createdAt: string;
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered';
-  user: { email: string };
-  total: number;
-}
+import { fetchOrders } from '@/api/orderService';
+import type { Order } from '@/types/order';
 
 export default function AdminOrdersPage() {
-  const { user } = useAuth();
+    const { user } = useAuth();
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [search, setSearch] = useState('');
@@ -28,19 +21,19 @@ export default function AdminOrdersPage() {
       return;
     }
 
-    const fetchOrders = async () => {
-      try {
-        const res = await api.get('/orders');
-        setOrders(res.data);
-      } catch (err) {
-        console.error('Siparişler alınamadı:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const load = async () => {
+        try {
+          const data = await fetchOrders();
+          setOrders(data);
+        } catch (err) {
+          console.error('Siparişler alınamadı:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    fetchOrders();
-  }, [user]);
+      load();
+    }, [user]);
 
   const filtered = orders.filter((order) => {
     const emailMatch = order.user?.email?.toLowerCase().includes(search.toLowerCase());

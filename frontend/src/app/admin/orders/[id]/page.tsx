@@ -2,55 +2,31 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import api from '@/lib/axios';
 import Link from 'next/link';
-
-interface OrderItem {
-  product?: { name: string };
-  qty: number;
-  price: number;
-}
-
-interface Order {
-  _id: string;
-  user: { email: string };
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered';
-  createdAt: string;
-  paymentMethod: string;
-  shippingAddress: {
-    fullName?: string;
-    street?: string;
-    city?: string;
-    postalCode?: string;
-    phone?: string;
-  };
-  items: OrderItem[];
-}
+import { getOrderById, updateOrderStatus } from '@/api/orderService';
+import { Order, OrderItem } from '@/types/order'
 
 export default function AdminOrderDetailPage() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const router = useRouter();
+
   const [order, setOrder] = useState<Order | null>(null);
   const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
-    const fetchOrder = async () => {
-      try {
-        const res = await api.get(`/orders/${id}`);
-        setOrder(res.data);
-      } catch (err) {
-        console.error('Sipariş alınamadı:', err);
-      }
-    };
-
-    fetchOrder();
+    if (!id) return;
+    getOrderById(id).then(setOrder).catch((err) => {
+      console.error('Sipariş alınamadı:', err);
+    });
   }, [id]);
 
-  const updateStatus = async (status: Order['status']) => {
+  const handleStatusUpdate = async (status: Order['status']) => {
+          if (!id) return;
     try {
       setUpdating(true);
-      const res = await api.patch(`/orders/${id}/status`, { status });
-      setOrder(res.data.order); // Not: controller'da `order` objesi içinde dönüyor
+      const updated = await updateOrderStatus(id, status);
+      setOrder(updated);
     } catch (err) {
       console.error('Durum güncelleme hatası:', err);
     } finally {
@@ -104,7 +80,7 @@ export default function AdminOrderDetailPage() {
         <select
           disabled={updating}
           value={order.status}
-          onChange={(e) => updateStatus(e.target.value as Order['status'])}
+          onChange={(e) => handleStatusUpdate(e.target.value as Order['status'])}
           className="border px-3 py-2 rounded"
         >
           <option value="pending">Beklemede</option>

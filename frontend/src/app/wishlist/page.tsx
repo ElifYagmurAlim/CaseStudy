@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/store/auth';
 import { useRouter } from 'next/navigation';
-import api from '@/lib/axios';
-import { Product } from '@/types/types';
+import { getWishlist, removeFromWishlist } from '@/api/userService';
+import { Product } from '@/types/product';
 import ProductCard from '@/components/ProductCard';
 
 export default function WishlistPage() {
@@ -15,14 +15,14 @@ export default function WishlistPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push('/login');
+      router.replace('/login');
       return;
     }
 
     const fetchWishlist = async () => {
       try {
-        const res = await api.get<Product[]>(`/users/${user._id}/wishlist`);
-        setProducts(res.data);
+        const data = await getWishlist(user._id);
+        setProducts(data);
       } catch (err) {
         console.error('Wishlist alınırken hata:', err);
       } finally {
@@ -35,7 +35,7 @@ export default function WishlistPage() {
 
   const removeFromWishlist = async (productId: string) => {
     try {
-      await api.delete(`/users/wishlist/${productId}`);
+      await removeFromWishlist(productId);
       setProducts((prev) => prev.filter((p) => p._id !== productId));
     } catch (err) {
       console.error('Wishlist’ten silinemedi:', err);

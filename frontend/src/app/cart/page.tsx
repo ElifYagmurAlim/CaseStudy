@@ -36,7 +36,7 @@ export default function CartPage() {
                 <tr key={item.productId} className="border-t">
                   <td className="p-2 flex items-center gap-2">
                     <Image
-                      src={`http://localhost:5000/uploads/${item.image}`}
+                      src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${item.image}`}
                       alt={item.name}
                       width={50}
                       height={50}

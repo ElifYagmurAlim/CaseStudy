@@ -2,28 +2,35 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import api from '@/lib/axios';
+import { getCategoryById, updateCategory } from '@/api/categoryService';
 
 export default function EditCategoryPage() {
-  const { id } = useParams();
+  const params = useParams();
+
   const router = useRouter();
+  
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [existingImage, setExistingImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+
   useEffect(() => {
     if (!id) return;
-    api.get(`/categories/${id}`).then((res) => {
-      setName(res.data.name);
-      setDescription(res.data.description);
-      setExistingImage(res.data.image);
+    getCategoryById(id).then((data) => {
+      setName(data.name);
+      setDescription(data.description);
+      setExistingImage(data.image);
     });
   }, [id]);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+
+        if (!id || typeof id !== 'string') return;
+
     const formData = new FormData();
     formData.append('name', name);
     formData.append('description', description);
@@ -31,7 +38,7 @@ export default function EditCategoryPage() {
 
     try {
       setLoading(true);
-      await api.patch(`/categories/${id}`, formData);
+      await updateCategory(id, formData);
       router.push('/admin/categories');
     } catch (err) {
       console.error('Kategori güncellenemedi:', err);
@@ -61,7 +68,7 @@ export default function EditCategoryPage() {
 
         {existingImage && (
           <img
-            src={`http://localhost:5000/uploads/${existingImage}`}
+            src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${existingImage}`}
             alt="Mevcut görsel"
             className="h-24 mb-2 object-cover"
           />

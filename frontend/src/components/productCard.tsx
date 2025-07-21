@@ -1,7 +1,7 @@
 'use client';
 
 import { useCart } from '@/store/cart';
-import { Product } from '@/types/types';
+import { Product } from '@/types/product';
 import { useAuth } from '@/store/auth';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';

@@ -2,34 +2,23 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import api from '@/lib/axios';
-
-interface Order {
-  _id: string;
-  createdAt: string;
-  status: string;
-  items: { qty: number; product: { name: string } }[];
-}
-
-interface User {
-  _id: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
-  addresses?: any[];
-}
+import { getUserById } from '@/api/userService';
+import { getOrdersByUserId } from '@/api/orderService';
+import type { User } from '@/types/user';
+import type { Order } from '@/types/order';
 
 export default function AdminCustomerDetail() {
-  const { id } = useParams();
+   const params = useParams();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+
   const [user, setUser] = useState<User | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
 
   useEffect(() => {
     if (!id) return;
 
-    api.get(`/users/${id}`).then((res) => setUser(res.data));
-    api.get(`/orders/user/${id}`).then((res) => setOrders(res.data));
+    getUserById(id).then(setUser);
+    getOrdersByUserId(id).then(setOrders);
   }, [id]);
 
   if (!user) return <p className="p-6">Yükleniyor...</p>;
@@ -54,7 +43,7 @@ export default function AdminCustomerDetail() {
             <li key={o._id} className="border p-3 rounded">
               <p><strong>Tarih:</strong> {new Date(o.createdAt).toLocaleDateString()}</p>
               <p><strong>Durum:</strong> {o.status}</p>
-              <p><strong>Ürünler:</strong> {o.items.map(i => `${i.product.name} x${i.qty}`).join(', ')}</p>
+              <p><strong>Ürünler:</strong> {o.items.map(i => `${i.product?.name} x${i.qty}`).join(', ')}</p>
             </li>
           ))}
         </ul>

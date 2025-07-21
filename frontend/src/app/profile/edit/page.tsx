@@ -3,9 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/store/auth';
-import api from '@/lib/axios';
 import { useForm, useFieldArray } from 'react-hook-form';
-
+import { updateUserProfile, updateUserPassword } from '@/api/userService';
 export default function ProfileEditPage() {
   const { user, updateUser } = useAuth();
   const router = useRouter();
@@ -48,7 +47,7 @@ export default function ProfileEditPage() {
 
   const onSubmit = async (data: any) => {
     try {
-      const res = await api.patch(`/users/${user?._id}`, data);
+      const res = await updateUserProfile(user!._id, data);
       updateUser(res.data);
       alert('Profil güncellendi');
     } catch (err) {
@@ -63,7 +62,7 @@ export default function ProfileEditPage() {
     const newPassword = (e.currentTarget.elements.namedItem('newPassword') as HTMLInputElement).value;
 
     try {
-      await api.patch(`/auth/${user?._id}/password`, { currentPassword, newPassword });
+      await updateUserPassword(user!._id, currentPassword, newPassword);
       setPasswordMessage('Şifre başarıyla güncellendi.');
     } catch (err: any) {
       setPasswordMessage('Hata: ' + (err.response?.data?.message || 'Şifre güncellenemedi.'));

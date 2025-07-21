@@ -7,8 +7,8 @@ import { loginUser } from '@/api/authService';
 import { useState } from 'react';
 import { isAxiosError } from 'axios';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/store/auth'; // ← kendi context hook'un
-import axios from '@/lib/axios';
+import { useAuth } from '@/store/auth'; 
+import { resendVerification } from '@/api/authService';
 
 const schema = z.object({
   email: z.string().email('Geçerli bir e-posta girin'),
@@ -57,15 +57,15 @@ const Login = () => {
     }
   };
 
-  const handleResend = async () => {
-    if (!emailForResend) return;
-    try {
-      await axios.post('/auth/resend-verification', { email: emailForResend });
-      alert('Doğrulama e-postası yeniden gönderildi.');
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Gönderim sırasında hata oluştu.');
-    }
-  };
+const handleResend = async () => {
+  if (!emailForResend) return;
+  try {
+    await resendVerification(emailForResend);
+    alert('Doğrulama e-postası yeniden gönderildi.');
+  } catch (err: any) {
+    alert(err.response?.data?.message || 'Gönderim sırasında hata oluştu.');
+  }
+};
 
   return (
     <div className="max-w-md mx-auto mt-10 p-6 border rounded-xl shadow-md bg-white">

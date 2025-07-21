@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import api from '@/lib/axios';
+import { createCategory } from '@/api/categoryService';
 
 export default function CreateCategoryPage() {
   const router = useRouter();
@@ -42,12 +42,7 @@ export default function CreateCategoryPage() {
     formData.append('image', file);
 
     try {
-      await api.post('/categories', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
+      await createCategory(formData);
       alert('Kategori oluşturuldu');
       router.push('/admin/categories');
     } catch (err) {

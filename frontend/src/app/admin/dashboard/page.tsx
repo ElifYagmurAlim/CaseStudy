@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import api from '@/lib/axios';
 import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import Link from 'next/link';
 import { DashboardData } from '@/types/dashboard';
+import { fetchDashboardData } from '@/api/adminService';
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042'];
 
@@ -22,10 +22,10 @@ const [data, setData] = useState<DashboardData | null>(null);
 
 
   useEffect(() => {
-    const fetchData = async () => {
+    const load = async () => {
       try {
-        const res = await api.get(`/admin/dashboard?range=${timeRange}`);
-        setData(res.data);
+        const result = await fetchDashboardData(timeRange);
+        setData(result);
       } catch (err) {
         console.error('Dashboard verisi alınamadı:', err);
       } finally {
@@ -33,11 +33,10 @@ const [data, setData] = useState<DashboardData | null>(null);
       }
     };
 
-    fetchData();
+    load();
   }, [timeRange]);
 
-  if (loading) return <p className="p-6">Yükleniyor...</p>;
-  if (!data) return <p>Yükleniyor...</p>;
+  if (loading || !data) return <p className="p-6">Yükleniyor...</p>;
 
   return (
     <div className="p-6 max-w-6xl mx-auto">

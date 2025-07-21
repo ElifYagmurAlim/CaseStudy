@@ -2,17 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import api from '@/lib/axios';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Category } from '@/types/category';
+import { getCategories , deleteCategory} from '@/api/categoryService';
 
-interface Category {
-  _id: string;
-  name: string;
-  description: string;
-  image: string;
-  isActive: boolean;
-}
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -20,10 +14,10 @@ export default function AdminCategoriesPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    const load  = async () => {
       try {
-        const res = await api.get('/categories');
-        setCategories(res.data);
+        const res = await getCategories();
+        setCategories(res);
       } catch (err) {
         console.error('Kategoriler alınamadı:', err);
       } finally {
@@ -31,13 +25,13 @@ export default function AdminCategoriesPage() {
       }
     };
 
-    fetchCategories();
+    load ();
   }, []);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Bu kategoriyi silmek istediğinize emin misiniz?')) return;
     try {
-      await api.delete(`/categories/${id}`);
+      await deleteCategory(id);
       setCategories((prev) => prev.filter((cat) => cat._id !== id));
     } catch (err) {
       console.error('Silme hatası:', err);

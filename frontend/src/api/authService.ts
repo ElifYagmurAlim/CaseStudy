@@ -23,7 +23,18 @@ export const loginUser = async (data: LoginPayload) => {
   return response.data;
 };
 
+export const verifyEmail = async (token: string): Promise<string> => {
+  const res = await axios.get(`/auth/verify/${token}`);
+  return res.data.message;
+};
+
+
 export const resendVerification = async (email: string) => {
   const response = await axios.post('/auth/resend-verification', { email });
   return response.data;
+};
+
+export const resendVerificationEmail = async (email: string): Promise<string> => {
+  const res = await axios.post('/auth/verify/resend', { email });
+  return res.data.message;
 };

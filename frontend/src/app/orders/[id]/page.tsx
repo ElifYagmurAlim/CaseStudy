@@ -2,43 +2,26 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import api from '@/lib/axios';
+import type { Order } from '@/types/order';
+import { getOrderById } from '@/api/orderService';
 
-interface OrderDetail {
-  _id: string;
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered';
-  createdAt: string;
-  shippingAddress?: {
-    street: string;
-    city: string;
-    postalCode: string;
-  };
-  items: {
-    qty: number;
-    price: number;
-    product: {
-      name: string;
-      price: number;
-    } | null;
-  }[];
-}
 
 export default function OrderDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const [order, setOrder] = useState<OrderDetail | null>(null);
+  const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || typeof id !== 'string') return;
 
     const fetchOrder = async () => {
       try {
-        const res = await api.get(`/orders/${id}`);
-        setOrder(res.data);
+        const data = await getOrderById(id);
+        setOrder(data);
       } catch (error) {
         console.error('Sipariş detayları alınamadı:', error);
-        router.push('/orders'); // sipariş bulunamazsa geri gönder
+        router.push('/orders');
       } finally {
         setLoading(false);
       }

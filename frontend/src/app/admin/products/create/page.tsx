@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import api from '@/lib/axios';
 import { useRouter } from 'next/navigation';
-import { createProduct } from '@/api/productService';
+import { Category} from '@/types/category';
+import { Variant } from '@/types/product'
 import { getCategories } from '@/api/categoryService';
-import { Category } from '@/types/category';
-import { Variant } from '@/types/product';
+
 
 export default function CreateProductPage() {
   const router = useRouter();
@@ -30,7 +31,7 @@ export default function CreateProductPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    getCategories().then(setCategories).catch(console.error);
+    getCategories().then((res) => setCategories(res));
   }, []);
 
   const handleChange = (
@@ -44,12 +45,12 @@ export default function CreateProductPage() {
     }));
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const filesArray = Array.from(e.target.files);
-      setForm((prev) => ({ ...prev, images: filesArray }));
-    }
-  };
+const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (e.target.files) {
+    const filesArray = Array.from(e.target.files); // artık güvenli
+    setForm((prev) => ({ ...prev, images: filesArray }));
+  }
+};
 
   const addSpec = () => {
     if (specKey && specValue) {
@@ -72,39 +73,42 @@ export default function CreateProductPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setLoading(true);
 
-    const formData = new FormData();
+      const formData = new FormData();
 
-    Object.entries(form).forEach(([key, value]) => {
-      if (key === 'images') {
-        (value as File[]).forEach((file) => formData.append('images', file));
-      } else if (key === 'specs' || key === 'variants') {
-        formData.append(key, JSON.stringify(value));
-      } else if (key === 'tags') {
-        const tagsArray = (value as string).split(',').map(tag => tag.trim());
-        formData.append('tags', JSON.stringify(tagsArray));
-      } else {
-        formData.append(key, value as string);
+      Object.entries(form).forEach(([key, value]) => {
+        if (key === 'images') {
+          (value as File[]).forEach((file) => formData.append('images', file));
+        } else if (key === 'specs' || key === 'variants') {
+          formData.append(key, JSON.stringify(value));
+        } else if (key === 'tags') {
+          // string "yeni,kış,unisex" → ["yeni", "kış", "unisex"]
+          const tagsArray = (value as string).split(',').map(tag => tag.trim());
+          formData.append('tags', JSON.stringify(tagsArray));
+        } else {
+          formData.append(key, value as string);
+        }
+      });
+
+      try {
+        await api.post('/products', formData);
+        router.push('/admin/products');
+      } catch (err) {
+        console.error('Ürün eklenirken hata:', err);
+      } finally {
+        setLoading(false);
       }
-    });
+    };
 
-    try {
-      await createProduct(formData);
-      router.push('/admin/products');
-    } catch (err) {
-      console.error('Ürün eklenirken hata:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded shadow">
       <h1 className="text-2xl font-bold mb-6">Yeni Ürün Oluştur</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
+
         <div>
           <label>Ürün Adı</label>
           <input name="name" className="input" value={form.name} onChange={handleChange} required />

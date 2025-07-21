@@ -3,22 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/store/auth';
 import { useRouter } from 'next/navigation';
-import api from '@/lib/axios';
+import {Order} from '@/types/order';
 import Link from 'next/link';
-
-interface Order {
-  _id: string;
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered';
-  createdAt: string;
-  items: {
-    qty: number;
-    price: number;
-    product: {
-      name: string;
-      price: number;
-    } | null;
-  }[];
-}
+import { getUserOrders } from '@/api/orderService'; 
 
 export default function OrdersPage() {
   const { user } = useAuth();
@@ -32,19 +19,19 @@ export default function OrdersPage() {
       return;
     }
 
-    const fetchOrders = async () => {
-      try {
-        const res = await api.get<Order[]>('/orders/user');
-        setOrders(res.data);
-      } catch (err) {
-        console.error('Siparişleri alırken hata:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+      const fetchOrders = async () => {
+    try {
+      const data = await getUserOrders();
+      setOrders(data);
+    } catch (err) {
+      console.error('Siparişleri alırken hata:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchOrders();
-  }, [user]);
+  fetchOrders();
+}, [user]);
 
   const statusBadge = (status: Order['status']) => {
     const base = 'px-2 py-1 text-xs rounded font-medium';

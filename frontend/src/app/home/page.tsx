@@ -6,12 +6,15 @@ import api from '@/lib/axios';
 import ProductCard from '@/components/ProductCard';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Product } from '@/types/types';
+import { Product } from '@/types/product';
+import { Category } from '@/types/category';
+import { getProducts } from '@/api/productService';
+import { getCategories } from '@/api/categoryService';
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [productsFiltered, setFilteredProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [sort, setSort] = useState('newest');
@@ -22,26 +25,26 @@ export default function HomePage() {
   const perPage = 8;
 
   useEffect(() => {
+  const fetchData = async () => {
     try {
-          const fetchData = async () => {
-      const res = await api.get('/products');
-      setProducts(res.data);
-      const cats = await api.get('/categories');
-      setCategories(cats.data);
-            let url = '/products';
+      const products = await getProducts();
+      const categories = await getCategories();
+      setProducts(products);
+      setCategories(categories);
+
       if (selectedCategory) {
-        url += `?category=${selectedCategory}`;
+        const filtered = await getProducts(selectedCategory);
+        setFilteredProducts(filtered);
+      } else {
+        setFilteredProducts(products);
       }
-
-      const prodRes = await api.get(url);
-      setFilteredProducts(prodRes.data);
-    };
-    fetchData();
     } catch (err) {
-      console.error('Ürünler veya kategoriler alınamadı:', err);
+      console.error('Veri alınırken hata oluştu:', err);
     }
+  };
 
-  }, [selectedCategory]);
+  fetchData();
+}, [selectedCategory]);
 
   const filteredProducts = productsFiltered
     .filter(p => {
@@ -151,8 +154,7 @@ export default function HomePage() {
               <div className="border p-4 rounded text-center hover:shadow transition">
                 <div className="w-24 h-24 relative mx-auto mb-2">
                   <Image
-                    src={`http://localhost:5000/uploads/${cat.image}`}
-                    alt={cat.name}
+                    src={`${process.env.NEXT_PUBLIC_IMAGE_BASE_URL}/${cat.image}`}                    alt={cat.name}
                     fill
                     className="object-cover rounded"
                   />

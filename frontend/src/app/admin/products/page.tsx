@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/store/auth';
 import { useRouter } from 'next/navigation';
-import { getAllProducts, deleteProduct, bulkUpdateProductStatus } from '@/api/productService';
+import { getProducts, deleteProduct, bulkUpdateProductStatus } from '@/api/productService';
 import { Product } from '@/types/product';
 
 
@@ -30,7 +30,7 @@ export default function AdminProductsPage() {
 
   const fetchProducts = async () => {
     try {
-      const res = await getAllProducts();
+      const res = await getProducts();
       setProducts(res);
     } catch (err) {
       console.error('Ürünler alınamadı:', err);

@@ -2,24 +2,9 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import api from '@/lib/axios';
 import { Star } from 'lucide-react';
-
-interface Review {
-  comment: string;
-  rating: number;
-  user: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-  };
-}
-
-interface Product {
-  _id: string;
-  name: string;
-  reviews: Review[];
-}
+import { getProductById } from '@/api/productService';
+import { Review, Product } from '@/types/product'
 
 export default function ProductReviewsPage() {
   const { id } = useParams();
@@ -32,8 +17,8 @@ export default function ProductReviewsPage() {
 
     const fetchProduct = async () => {
       try {
-        const res = await api.get(`/products/${id}`);
-        setProduct(res.data);
+        const product = await getProductById(id as string);
+        setProduct(product);
       } catch (err) {
         console.error("Yorumlar yüklenemedi:", err);
       } finally {
@@ -59,16 +44,16 @@ export default function ProductReviewsPage() {
             <li key={idx} className="border p-4 rounded bg-white shadow">
               <div className="flex justify-between items-center mb-1">
                 <p className="font-semibold">
-                  {r.user?.firstName} {r.user?.lastName}
+                  {r.user?.name}
                 </p>
                 <div className="flex gap-1">
                   {[...Array(r.rating)].map((_, i) => (
                     <Star 
-                    key={i} 
-                    size={16} 
-                    className="text-yellow-500" 
-                    color='#facc15' 
-                    fill='#facc15'                    
+                      key={i} 
+                      size={16} 
+                      className="text-yellow-500" 
+                      color="#facc15" 
+                      fill="#facc15" 
                     />
                   ))}
                 </div>
