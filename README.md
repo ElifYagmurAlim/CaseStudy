@@ -71,23 +71,20 @@ npm run dev
 
 👤 **Demo Giriş Bilgileri**  
 **Admin**  
-- Email: admin@example.com  
-- Şifre: Admin123  
+- Email: elifalim1506@gmail.com  
+- Şifre: asd123  
 
 **Kullanıcı**  
-- Email: user@example.com  
-- Şifre: User123  
+- Email: elifyagmuralim@gmail.com  
+- Şifre: asd123  
 
-📘 **API Endpoint Örnekleri**  
-Yöntem | Endpoint | Açıklama
----|---|---
-GET | /api/products | Tüm ürünleri getir
-GET | /api/products/:id | Ürün detayları
-POST | /api/products/:id/review | Ürüne yorum yap
-POST | /api/orders | Sipariş oluştur
-POST | /api/users/register | Kayıt ol
-POST | /api/users/login | Giriş yap
-POST | /api/products/update-viewed-together | ViewedTogether güncelle
+📘 **Yorum Yapma ve Üye Olurken Email Gönderme**  
+
+Register ekranından kayıt sonlanınca kullanıcının kayıt olduğu maile bu şekilde mail iletilmektedir.
+
+Yorum yapmak için kullanıcının siparişinin durumunun teslim edildi olması gerekmektedir. Siparişi teslim edilen kullanıcı ürün detay sayfasında yorumlar alanında yorum yap paneline erişim sağlayıp değerlendirme yapabilecektir.
+
+Hesabınızı doğrulamak için linke tıklayın: http://localhost:3000/verify/[token]
 
 📈 **Bonus Özellikler**
 - 📊 Admin Dashboard'da temel istatistik görselleri
