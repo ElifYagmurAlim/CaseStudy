@@ -35,7 +35,7 @@ export default function ProductCard({
   const [added, setAdded] = useState(false);
 
   const currentQty = items.find(item => item.productId === _id)?.qty || 0;
-  const isWished = user?.wishlist?.includes(_id);
+const isWished = Array.isArray(user?.wishlist) && _id && user.wishlist.includes(_id);
   const mainImage = images?.[0] || PLACEHOLDER_IMAGE ;
 
   const handleAdd = async () => {
@@ -64,7 +64,7 @@ export default function ProductCard({
     try {
       setLoading(true);
       const updatedWishlist = await toggleWishlist(user._id, _id);
-      updateUser({ wishlist: updatedWishlist });
+      updateUser({ wishlist: updatedWishlist.wishlist });
     } catch (err) {
       console.error('Favori işlemi başarısız:', err);
     } finally {

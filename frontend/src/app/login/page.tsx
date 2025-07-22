@@ -36,7 +36,7 @@ const Login = () => {
 
       login(res, res.token); // kullanıcıyı kaydet, token'ı al
       if (res.role === 'admin') {
-        router.push('/admin');
+        router.push('/admin/dashboard');
       } else {
         router.push('/');
       }
@@ -45,8 +45,9 @@ const Login = () => {
       if (isAxiosError(err)) {
         const message = err.response?.data?.message;
 
-        if (message === 'Email not verified') {
+        if (message === 'E-posta adresiniz henüz doğrulanmamış. Lütfen e-postanızı kontrol edin.') {
           setServerError('E-posta adresiniz henüz doğrulanmamış.');
+          console.log(data.email);
           setEmailForResend(data.email);
         } else {
           setServerError(message || 'Giriş başarısız');

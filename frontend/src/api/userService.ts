@@ -17,11 +17,6 @@ export const updateUserProfile = async (userId: string, data: any) => {
   return res.data;
 };
 
-export const updateUserPassword = async (userId: string, currentPassword: string, newPassword: string) => {
-  const res = await api.patch(`/auth/${userId}/password`, { currentPassword, newPassword });
-  return res.data;
-};
-
 export const deleteUser = async (id: string): Promise<void> => {
   await api.delete(`/users/${id}`);
 };

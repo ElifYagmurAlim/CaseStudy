@@ -30,7 +30,7 @@ export default function Navbar() {
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (user?.role === 'admin') {
-      router.push('/admin');
+      router.push('/admin/dashboard');
     } else {
       router.push('/');
     }

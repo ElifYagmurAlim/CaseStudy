@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useCart } from '@/store/cart';
 import { useAuth } from '@/store/auth';
-import { BsHeartFill } from 'react-icons/bs';
+import { BsHeartFill, BsStarFill } from 'react-icons/bs';
 import { Heart, Star } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
 import { Product, Review } from '@/types/product';
@@ -22,6 +22,7 @@ import {
   submitReview
 } from '@/api/reviewService';
 import { ALERTS } from '@/constants/messages';
+import { toggleWishlist } from '@/api/userService';
 
 export default function ProductDetailPage() {
   const rawId = useParams().id;
@@ -61,14 +62,16 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     const fetchAll = async () => {
-      await fetchProduct();
       if (!id || viewedOnce.current) return;
+      viewedOnce.current = true;
+
+      await fetchProduct();
 
       try {
         await markProductAsViewed(id);
         viewedOnce.current = true;
 
-const recent = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || '[]');
+        const recent = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || '[]');
         const updated = [id, ...recent.filter((pid: string) => pid !== id)].slice(0, 5);
         localStorage.setItem('recentlyViewedProducts', JSON.stringify(updated));
 
@@ -97,17 +100,15 @@ const recent = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || '[]');
     }
   }, [lastReviews, product, user]);
 
-  const isWished = !!(product?._id && user?.wishlist?.includes(product._id));
+  
+const isWished = Array.isArray(user?.wishlist) && product?._id && user.wishlist.includes(product._id);
 
-  const toggleWishlist = async () => {
+  const handleToggleWishlist = async () => {
     if (!user || !product) return alert(ALERTS.LOGIN_REQUIRED);
     try {
       setLoading(true);
-      const res = await fetch(`/api/users/${user._id}/wishlist/${product._id}`, {
-        method: 'POST',
-      });
-      const data = await res.json();
-      updateUser({ wishlist: data.wishlist });
+      const res = await toggleWishlist(user._id, product._id)
+      updateUser({ wishlist: res.wishlist });
     } catch (err) {
       console.error('Favori işlemi başarısız:', err);
     } finally {
@@ -120,10 +121,16 @@ const handleSubmitReview = async () => {
   try {
     setSubmittingReview(true);
     await submitReview(product._id, { comment, rating });
+
     setComment('');
     setRating(0);
     await fetchProduct();
     setHasReviewed(true);
+
+    // ✅ Yorumdan sonra canReview tekrar kontrol edilsin
+    const canStillReview = await canReviewProduct(product._id);
+    setCanReview(canStillReview);
+
   } catch (err) {
     console.error("Yorum gönderilemedi:", err);
   } finally {
@@ -159,7 +166,7 @@ const handleSubmitReview = async () => {
         <div className="relative w-full aspect-square border rounded overflow-hidden">
           <Image src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${mainImage}`} alt={product.name} fill className="object-cover" />
           <button
-            onClick={toggleWishlist}
+            onClick={handleToggleWishlist}
             className="absolute top-2 right-2 text-red-500 hover:scale-110 transition z-10"
             disabled={loading}
           >
@@ -178,7 +185,7 @@ const handleSubmitReview = async () => {
             <p><strong>Satış:</strong> {product.sold}</p>
             <p><strong>Görüntüleme:</strong> {product.views}</p>
             {avgRating && (
-              <p><strong>Ortalama Puan:</strong> {avgRating} <Star size={16} className="inline-block text-yellow-500" /></p>
+              <p><strong>Ortalama Puan:</strong> {avgRating} <BsStarFill size={16} className="inline-block text-yellow-500" /></p>
             )}
           </div>
 
@@ -263,7 +270,7 @@ const handleSubmitReview = async () => {
 
         <div className="mt-4">
           <button
-            onClick={() => router.push(`/products/${id}/reviews`)}
+            onClick={() => router.push(`/product/${id}/reviews`)}
             className="text-blue-600 hover:underline"
           >
             Tüm yorumları gör

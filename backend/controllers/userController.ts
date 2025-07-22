@@ -51,6 +51,8 @@ export const deleteUser = async (req: Request, res: Response) => {
 
 // Favori ürünleri getir
 export const getWishlist = async (req: Request, res: Response) => {
+            console.log("user");
+
   const user = await User.findById(req.params.id).populate('wishlist');
   if (!user) return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
   res.json(user.wishlist);
@@ -60,6 +62,7 @@ export const getWishlist = async (req: Request, res: Response) => {
 export const toggleWishlist = async (req: Request, res: Response) => {
   try {
     const user = await User.findById(req.params.id);
+    
     if (!user) return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
     
     const productId = req.params.productId;

@@ -1,14 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { verifyEmail } from '@/api/authService';
 import { isAxiosError } from 'axios';
 
 const Verify = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get('token'); // Next.js'te token query paramından alınır
+  const rawToken = useParams();
+  const token = Array.isArray(rawToken) ? rawToken[0].token : rawToken.token;
 
   const [status, setStatus] = useState<'pending' | 'success' | 'error'>('pending');
   const [message, setMessage] = useState('');

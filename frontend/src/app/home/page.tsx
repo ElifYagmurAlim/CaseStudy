@@ -9,6 +9,7 @@ import { Product } from '@/types/product';
 import { Category } from '@/types/category';
 import { getProducts } from '@/api/productService';
 import { getCategories } from '@/api/categoryService';
+import { subscribeToNewsletter } from '@/api/newsletterService';
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -20,6 +21,9 @@ export default function HomePage() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [page, setPage] = useState(1);
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
 
   const perPage = 8;
 
@@ -67,6 +71,20 @@ export default function HomePage() {
   const featured = products.filter(p => p.featured).slice(0, 4);
   const newArrivals = [...products].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt|| 0).getTime()).slice(0, 4);
   const popular = [...products].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 4);
+
+  const handleSubscribe = async () => {
+    if (!email) return setError('Lütfen bir e-posta adresi girin');
+
+    try {
+      await subscribeToNewsletter(email);
+      setMessage('Abonelik başarılı!');
+      setEmail('');
+      setError('');
+    } catch (err: any) {
+      console.error(err);
+      setError(err.response?.data?.message || 'Bir hata oluştu.');
+    }
+  };
 
   return (
     <main>
@@ -153,7 +171,7 @@ export default function HomePage() {
               <div className="border p-4 rounded text-center hover:shadow transition">
                 <div className="w-24 h-24 relative mx-auto mb-2">
                   <Image
-                    src={`${process.env.NEXT_PUBLIC_IMAGE_BASE_URL}/${cat.image}`}                    
+                    src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${cat.image}`}                    
                     alt={cat.name}
                     fill
                     className="object-cover rounded"
@@ -183,15 +201,24 @@ export default function HomePage() {
       </section>
 
       {/* ✅ Newsletter */}
-      <section className="bg-blue-600 text-white py-12 text-center">
-        <h3 className="text-xl font-bold mb-2">Yeniliklerden İlk Sen Haberdar Ol!</h3>
-        <input
-          type="email"
-          placeholder="E-mail adresinizi girin"
-          className="p-2 w-64 text-black rounded"
-        />
-        <button className="ml-2 bg-white text-blue-600 px-4 py-2 rounded">Abone Ol</button>
-      </section>
+ <section className="bg-blue-600 text-white py-12 text-center">
+      <h3 className="text-xl font-bold mb-2">Yeniliklerden İlk Sen Haberdar Ol!</h3>
+      <input
+        type="email"
+        placeholder="E-mail adresinizi girin"
+        className="p-2 w-64 text-black rounded"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <button
+        className="ml-2 bg-white text-blue-600 px-4 py-2 rounded"
+        onClick={handleSubscribe}
+      >
+        Abone Ol
+      </button>
+      {message && <p className="mt-2 text-green-300 text-sm">{message}</p>}
+      {error && <p className="mt-2 text-red-300 text-sm">{error}</p>}
+    </section>
     </main>
   );
 }

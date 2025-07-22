@@ -34,24 +34,30 @@ export const canUserReview = async (req: Request, res: Response) => {
   const { productId } = req.params;
 
   try {
-    // 1. Ürünü teslim almış mı?
-    const hasDeliveredOrder = await Order.findOne({
+    // Kullanıcının bu ürünü içeren tüm teslim edilmiş siparişlerini al
+    const deliveredOrders = await Order.find({
       user: userId,
       status: 'delivered',
       'items.product': productId,
     });
 
-    if (!hasDeliveredOrder) {
+    // Aynı ürünü içeren sipariş sayısı kadar yorum hakkı var
+    const deliveredCount = deliveredOrders.length;
+
+    if (deliveredCount === 0) {
       return res.json({ canReview: false });
     }
 
-    // 2. Daha önce yorum yapmış mı?
-    const existingReview = await Review.findOne({ user: userId, product: productId });
-    if (existingReview) {
-      return res.json({ canReview: false });
-    }
+    // Kullanıcının o ürüne yaptığı yorum sayısı
+    const reviewCount = await Review.countDocuments({
+      user: userId,
+      product: productId,
+    });
 
-    res.json({ canReview: true });
+    // Eğer teslim edilen sipariş sayısı > yorum sayısı ise yorum yapabilir
+    const canReview = deliveredCount > reviewCount;
+
+    res.json({ canReview });
   } catch (err) {
     console.error('Review izin kontrolü hatası:', err);
     res.status(500).json({ message: 'Sunucu hatası' });

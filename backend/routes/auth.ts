@@ -8,7 +8,7 @@ const router = express.Router();
 router.post('/register', registerLimiter , registerUser); // POST /api/auth/register
 router.post('/login', loginLimiter, loginUser);       // POST /api/auth/login
 router.patch('/:id/password', authMiddleware, updatePassword);
-router.get('/verify-email', verifyEmail);
+router.get('/verify-email/:token', verifyEmail);
 router.post('/resend-verification', resendVerificationEmail);
 
 export default router;

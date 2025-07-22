@@ -3,8 +3,9 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
-// uploads klasörünü oluştur
-const uploadDir = path.join(__dirname, '../../uploads');
+// uploads klasörünü backend/uploads içinde oluştur
+const uploadDir = path.join(__dirname, '../uploads');
+
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }

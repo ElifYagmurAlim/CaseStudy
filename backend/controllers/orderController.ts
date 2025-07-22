@@ -53,16 +53,6 @@ export const getOrderById = async (req: Request, res: Response) => {
   }
 };
 
-// export const getOrderById = async (req, res) => {
-//   try {
-//     const order = await Order.findById(req.params.id).populate('user', 'email').populate('items.product');
-//     if (!order) return res.status(404).json({ message: 'Sipariş bulunamadı' });
-//     res.json(order);
-//   } catch (err) {
-//     res.status(500).json({ message: 'Hata oluştu' });
-//   }
-// };
-
 // @desc    Yeni sipariş oluştur
 export const createOrder = async (req: Request, res: Response) => {
   const { user, items, address, paymentMethod = 'cash' } = req.body;
@@ -102,7 +92,7 @@ export const createOrder = async (req: Request, res: Response) => {
 
     // Stok güncelleme
     for (const item of items) {
-      await Product.findByIdAndUpdate(item.productId, {
+      await Product.findByIdAndUpdate(item.product, {
         $inc: { stock: -item.qty, sold: item.qty },
       });
     }

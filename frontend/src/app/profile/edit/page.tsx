@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/store/auth';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { updateUserProfile, updateUserPassword } from '@/api/userService';
+import { updateUserProfile } from '@/api/userService';
+import {  updateUserPassword } from '@/api/authService';
 import { isAxiosError } from 'axios';
 import { ALERTS } from '@/constants/messages';
 
@@ -52,7 +53,7 @@ export default function ProfileEditPage() {
   const onSubmit = async (data: any) => {
     try {
       const res = await updateUserProfile(user!._id, data);
-      updateUser(res.data);
+      updateUser(res);
       alert(ALERTS.PROFILE_CREATED);
     } catch (err) {
       console.error('Güncelleme hatası:', err);

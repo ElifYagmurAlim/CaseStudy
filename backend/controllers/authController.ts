@@ -107,7 +107,7 @@ export const updatePassword = async (req: Request, res: Response) => {
 
 export const verifyEmail = async (req: Request, res: Response) => {
   try {
-    const { token } = req.query;
+    const { token } = req.params;
     if (!token || typeof token !== 'string') {
       return res.status(400).json({ message: 'Geçersiz bağlantı.' });
     }
@@ -136,8 +136,7 @@ export const resendVerificationEmail = async (req: Request, res: Response) => {
     if (!user) return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
     if (user.isVerified) return res.status(400).json({ message: 'Hesap zaten doğrulanmış' });
 
-    const verificationToken = user.verificationToken;
-
+    const verificationToken = user.emailVerificationToken;
     const url = `http://localhost:3000/verify/${verificationToken}`;
 
     await sendEmail(user.email, 'E-posta Doğrulama', `Hesabınızı doğrulamak için linke tıklayın: ${url}`);

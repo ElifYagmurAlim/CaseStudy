@@ -6,6 +6,7 @@ import { Product } from '@/types/product';
 import { Category } from '@/types/category';
 import { getProducts } from '@/api/productService';
 import { getCategories } from '@/api/categoryService';
+import { useSearchParams } from 'next/navigation';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -19,13 +20,19 @@ export default function ProductsPage() {
   const [selectedSpecs, setSelectedSpecs] = useState<Record<string, string>>({});
   const [onlyInStock, setOnlyInStock] = useState(false);
   const [sortBy, setSortBy] = useState<'priceLow' | 'priceHigh' | 'rating' | 'newest'>('newest');
+const searchParams = useSearchParams();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const categoryData = await getCategories();
         setCategories(categoryData);
+        
+         const categoryFromUrl = searchParams.get('category');
 
+        if (categoryFromUrl) {
+          setSelectedCategory(categoryFromUrl);
+        }
         const productData = await getProducts(selectedCategory || undefined);
         setProducts(productData);
       } catch (err) {
