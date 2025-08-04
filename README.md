@@ -1,7 +1,7 @@
 🛍️ Elif'in Mağazası – E-Ticaret Platformu
 Modern, mobil uyumlu ve yönetilebilir bir e-ticaret uygulamasıdır. Hem müşteri hem de admin paneli içerir. Ürün inceleme, filtreleme, sepet, kullanıcı hesabı, öneri sistemi gibi birçok özellikle donatılmıştır.
 
-📦 Özellikler (Case Bazlı Takip)
+📦 Özellikle
 Özellik | Açıklama
 ---|---
 ✅ App Router & Next.js 14 | App Router yapısı ile kurulmuştur.
@@ -31,13 +31,7 @@ Modern, mobil uyumlu ve yönetilebilir bir e-ticaret uygulamasıdır. Hem müşt
 - Docker (MongoDB için önerilir)  
 - npm veya yarn  
 
-**1. Projeyi Klonlayın**  
-```bash
-git clone https://github.com/ElifYagmurAlim/CaseStudy.git
-cd CaseStudy
-```
-
-**2. Ortam Değişkenleri (.env)**  
+**Ortam Değişkenleri (.env)**  
 Örnek:  
 ```env
 # .env.example (backend için)
